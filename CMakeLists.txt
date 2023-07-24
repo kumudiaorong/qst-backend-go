@@ -15,7 +15,12 @@ set(CMAKE_PREFIX_PATH "/home/kmdr/tools/Qt/6.2.4/gcc_64" ${CMAKE_PREFIX_PATH})
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
 
+include_directories("./app")
+
 add_executable(qst-core
+  ./app/appinfo.h
+  ./app/appinfo.cpp
+  trie.hpp
   appopt.h
   appopt.cpp
   main.cpp
