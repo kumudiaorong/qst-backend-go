@@ -5,66 +5,27 @@ project(qst-core LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-get_filename_component(qst_proto "./protos/qst.proto" ABSOLUTE)
-get_filename_component(qst_proto_path "${qst_proto}" PATH)
-
-# set(CMAKE_PREFIX_PATH "/home/kmdr/tools/Qt/6.2.4/gcc_64" ${CMAKE_PREFIX_PATH})
-set(_PROTOBUF_PROTOC protoc)
-set(_GRPC_GRPCPP grpc++)
-set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
-set(_REFLECTION gRPC::grpc++_reflection)
-find_program(_GRPC_CPP_PLUGIN_EXECUTABLE grpc_cpp_plugin)
-
-# Generated sources
-set(qst_proto_srcs "${CMAKE_CURRENT_SOURCE_DIR}/comm/qst.pb.cc")
-set(qst_proto_hdrs "${CMAKE_CURRENT_SOURCE_DIR}/comm/qst.pb.h")
-set(qst_grpc_srcs "${CMAKE_CURRENT_SOURCE_DIR}/comm/qst.grpc.pb.cc")
-set(qst_grpc_hdrs "${CMAKE_CURRENT_SOURCE_DIR}/comm/qst.grpc.pb.h")
-
-add_custom_command(
-  OUTPUT "${qst_proto_srcs}" "${qst_proto_hdrs}" "${qst_grpc_srcs}" "${qst_grpc_hdrs}"
-  COMMAND ${_PROTOBUF_PROTOC}
-  ARGS --grpc_out "${CMAKE_CURRENT_SOURCE_DIR}/comm"
-  --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}/comm"
-  -I "${qst_proto_path}"
-  --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
-  "${qst_proto}"
-  DEPENDS "${qst_proto}")
-
-add_custom_target(qst-core-protos DEPENDS ${qst_proto_srcs} ${qst_proto_hdrs} ${qst_grpc_srcs} ${qst_grpc_hdrs})
-
-# find_package(protobuf REQUIRED)
+# find_package(ICU 73.0 COMPONENTS uc i18n REQUIRED)
 
 # SET(PROTOBUF_INCLUDE_DIR, "/usr/local/include")
-include_directories(".")
-
-find_package(Protobuf CONFIG REQUIRED)
-find_package(gRPC CONFIG REQUIRED)
-
-add_library(helper
-  ${qst_grpc_srcs}
-  ${qst_grpc_hdrs}
-  ${qst_proto_srcs}
-  ${qst_proto_hdrs})
-
 add_executable(qst-core
   qst_core.cpp
-  ./help/helper.cpp
   ./tree/trie.cpp
 )
 
-find_package(ICU 73.0 COMPONENTS uc i18n REQUIRED)
+add_subdirectory(qst-proto)
 
-# message(STATUS "!!!${ICU_LINK_LIBRARIES}")
-target_link_libraries(qst-core
-  helper
-  ICU::uc
-  ICU::i18n
-  ${_REFLECTION}
-  ${_GRPC_GRPCPP}
-  ${_PROTOBUF_LIBPROTOBUF}
+target_include_directories(qst-core PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  qst-proto
 )
 
+target_link_libraries(qst-core PUBLIC
+  qst-grpc-cpp
+
+  # ICU::uc
+  # ICU::i18n
+)
 install(TARGETS qst-core
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

@@ -32,8 +32,8 @@
 #include <thread>
 #include <vector>
 
-#include "comm/qst.grpc.pb.h"
-#include "comm/qst.pb.h"
+#include "cpp/qst.grpc.pb.h"
+#include "cpp/qst.pb.h"
 
 using grpc::Channel;
 using grpc::ClientContext;

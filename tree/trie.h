@@ -10,7 +10,7 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "comm/qst.pb.h"
+#include "cpp/qst.pb.h"
 namespace qst {
   template <typename Info>
   class TrieNode {

@@ -15,9 +15,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "comm/qst.pb.h"
-#include "core/core.hpp"
-#include "tree/trie.h"
+#include "core.h"
+
 int main(int argc, char *argv[]) {
   qst::QstCore core(argc, argv);
   core.exec();

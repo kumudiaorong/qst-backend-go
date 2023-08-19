@@ -1,23 +1,30 @@
 #ifndef QST_CORE_HPP
 #define QST_CORE_HPP
 #include <grpcpp/server_builder.h>
+#include <grpcpp/support/status.h>
 #include <unicode/ucnv.h>
 #include <unicode/ucsdet.h>
 #include <unicode/umachine.h>
 #include <unicode/urename.h>
 #include <unicode/utypes.h>
+#include <unistd.h>
 
-#include <codecvt>
-#include <concepts>
+#include <cstddef>
+#include <cstdlib>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <locale>
-#include <ranges>
+#include <string>
 #include <string_view>
+#include <thread>
 
-#include "comm/qst.grpc.pb.h"
+#include "cpp/qst.grpc.pb.h"
 #include "tree/trie.h"
+
+
+
 namespace qst {
   class AppSearcher {
   public:
@@ -101,17 +108,26 @@ namespace qst {
       return apps.find_prefix(word);
     }
   };
-  class QstCore : public qst::Interact::Service {
+  class QstCore : public Interact::Service {
   public:
     std::string addr;
     std::unique_ptr<grpc::Server> server;
     AppSearcher searcher;
-  public:
+
     QstCore(int& argc, char **argv)
       : server()
       , addr("0.0.0.0:50051")
       , searcher() {
     }
+    void exec() {
+      ::grpc::ServerBuilder builder;
+      builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
+      builder.RegisterService(this);
+      server = builder.BuildAndStart();
+      std::cout << "Server listening on " << addr.data() << std::endl;
+      server->Wait();
+    }
+  protected:
     ::grpc::Status Query(
       ::grpc::ServerContext *context, const ::qst::Input *request, ::qst::AppInfo *response) override {
       response->set_name(request->str());
@@ -126,13 +142,26 @@ namespace qst {
         writer->Write(*info);
       return ::grpc::Status::OK;
     }
-    void exec() {
-      ::grpc::ServerBuilder builder;
-      builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
-      builder.RegisterService(this);
-      server = builder.BuildAndStart();
-      std::cout << "Server listening on " << addr.data() << std::endl;
-      server->Wait();
+    ::grpc::Status RunApp(
+      ::grpc::ServerContext *context, const ::qst::AppInfo *request, ::qst::Empty *response) override {
+      pid_t pid = fork();
+      if(pid == 0) {
+        auto p = request->exec().find_first_of(' ');
+        std::string path = request->exec().substr(0, p);
+        std::cout << "RunApp: " << path << std::endl;
+        std::cout << "Exec: " << request->exec() << std::endl;
+        setpgid(0, 0);
+        int err = execlp(path.data(), request->exec().data(), nullptr);
+        // execl("/usr/share/code/code", "code", "--unity-launch", "filename", NULL);
+        // int err = execlp("totem", "totem", "%U", NULL);
+        // if(err == -1) {
+        //   std::cout << "Error: " << strerror(errno) << std::endl;
+        // }
+        exit(0);
+      }
+      std::cout << "RunApp: " << request->name() << std::endl;
+      std::cout << "Exec: " << request->exec() << std::endl;
+      return ::grpc::Status::OK;
     }
   };
 }  // namespace qst
