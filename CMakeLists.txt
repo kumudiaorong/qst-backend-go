@@ -10,8 +10,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # SET(PROTOBUF_INCLUDE_DIR, "/usr/local/include")
 add_executable(qst-b)
 
-target_sources(qst-b PRIVATE
+target_sources(qst-b
+  PRIVATE
   src/main.cpp
+  PUBLIC
+  src/core.hpp
+  src/trie.hpp
 )
 
 add_subdirectory(qst-proto)

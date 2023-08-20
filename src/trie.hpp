@@ -1,5 +1,5 @@
-#ifndef QST_TRIE_H
-#define QST_TRIE_H
+#ifndef QST_TRIE_HPP
+#define QST_TRIE_HPP
 #include <functional>
 #include <memory>
 #include <ranges>
