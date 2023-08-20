@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "core.h"
+#include "core.hpp"
 
 int main(int argc, char *argv[]) {
   qst::QstCore core(argc, argv);

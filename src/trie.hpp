@@ -1,16 +1,11 @@
 #ifndef QST_TRIE_H
 #define QST_TRIE_H
-#include <unicode/utf8.h>
-#include <unicode/utypes.h>
-
-#include <filesystem>
-#include <fstream>
-#include <locale>
+#include <functional>
+#include <memory>
 #include <ranges>
 #include <string_view>
 #include <unordered_map>
-
-#include "cpp/qst.pb.h"
+#include <vector>
 namespace qst {
   template <typename Info>
   class TrieNode {

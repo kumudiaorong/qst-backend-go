@@ -21,9 +21,7 @@
 #include <thread>
 
 #include "cpp/qst.grpc.pb.h"
-#include "tree/trie.h"
-
-
+#include "trie.hpp"
 
 namespace qst {
   class AppSearcher {

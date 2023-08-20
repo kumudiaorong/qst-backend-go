@@ -8,17 +8,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # find_package(ICU 73.0 COMPONENTS uc i18n REQUIRED)
 
 # SET(PROTOBUF_INCLUDE_DIR, "/usr/local/include")
-add_executable(qst-core
-  qst_core.cpp
-  ./tree/trie.cpp
+add_executable(qst-core)
+
+target_sources(qst-core PRIVATE
+  src/main.cpp
 )
 
 add_subdirectory(qst-proto)
 
 target_include_directories(qst-core PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}
-  qst-proto
+  ${CMAKE_CURRENT_SOURCE_DIR}/qst-proto
 )
+
+message(STATUS ${CMAKE_CURRENT_SOURCE_DIR}/qst-proto)
 
 target_link_libraries(qst-core PUBLIC
   qst-grpc-cpp
