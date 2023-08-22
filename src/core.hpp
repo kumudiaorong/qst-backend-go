@@ -2,25 +2,17 @@
 #define QST_CORE_HPP
 #include <grpcpp/server_builder.h>
 #include <grpcpp/support/status.h>
-#include <unicode/ucnv.h>
-#include <unicode/ucsdet.h>
-#include <unicode/umachine.h>
-#include <unicode/urename.h>
-#include <unicode/utypes.h>
 #include <unistd.h>
 
-#include <cstddef>
-#include <cstdlib>
-#include <ctime>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <locale>
 #include <string>
 #include <string_view>
-#include <thread>
 
-#include "cpp/qst.grpc.pb.h"
+#include "qst.grpc.pb.h"
 #include "trie.hpp"
 
 namespace qst {
@@ -109,13 +101,27 @@ namespace qst {
   class QstCore : public Interact::Service {
   public:
     std::string addr;
+    std::string frontEnd;
     std::unique_ptr<grpc::Server> server;
     AppSearcher searcher;
 
-    QstCore(int& argc, char **argv)
+    QstCore(int argc, char *argv[])
       : server()
-      , addr("0.0.0.0:50051")
+      , addr()
       , searcher() {
+      for(int i = 1; i < argc; ++i) {
+        if(std::strcmp(argv[i], "--addr") == 0) {
+          addr = argv[++i];
+        } else if(std::strcmp(argv[i], "--front-end") == 0) {
+          frontEnd = argv[++i];
+        } else if(std::strcmp(argv[i], "--help") == 0) {
+          std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
+          std::cout << "Options:" << std::endl;
+          std::cout << "  --addr <addr>  Set the address to listen on" << std::endl;
+          std::cout << "  --help         Show this help message" << std::endl;
+          std::exit(0);
+        }
+      }
     }
     void exec() {
       ::grpc::ServerBuilder builder;
@@ -144,6 +150,9 @@ namespace qst {
       ::grpc::ServerContext *context, const ::qst::AppInfo *request, ::qst::Empty *response) override {
       pid_t pid = fork();
       if(pid == 0) {
+        fclose(stdin);
+        fclose(stdout);
+        fclose(stderr);
         auto p = request->exec().find_first_of(' ');
         std::string path = request->exec().substr(0, p);
         std::cout << "RunApp: " << path << std::endl;

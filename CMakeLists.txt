@@ -5,9 +5,17 @@ project(qst-back-end LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# find_package(ICU 73.0 COMPONENTS uc i18n REQUIRED)
+execute_process(
+  COMMAND ${CMAKE_COMMAND} --no-warn-unused-cli -DCMAKE_BUILD_TYPE:STRING=Release -Bbuild -G Ninja
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/qst-proto
+)
+execute_process(
+  COMMAND ${CMAKE_COMMAND} --build build --config Release --target qst-grpc-cpp-gen
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/qst-proto
+)
 
-# SET(PROTOBUF_INCLUDE_DIR, "/usr/local/include")
+add_subdirectory(qst-proto)
+
 add_executable(qst-b)
 
 target_sources(qst-b
@@ -18,18 +26,13 @@ target_sources(qst-b
   src/trie.hpp
 )
 
-add_subdirectory(qst-proto)
-
 target_include_directories(qst-b PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/qst-proto
+  ${CMAKE_CURRENT_SOURCE_DIR}/qst-proto/cpp
 )
-
-message(STATUS ${CMAKE_CURRENT_SOURCE_DIR}/qst-proto)
 
 target_link_libraries(qst-b PUBLIC
   qst-grpc-cpp
-
   # ICU::uc
   # ICU::i18n
 )
