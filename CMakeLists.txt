@@ -24,6 +24,7 @@ target_sources(qst-b
   PUBLIC
   src/core.hpp
   src/trie.hpp
+  src/appinfo.hpp
 )
 
 target_include_directories(qst-b PRIVATE

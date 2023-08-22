@@ -12,7 +12,9 @@
 #include <string>
 #include <string_view>
 
+#include "appinfo.hpp"
 #include "qst.grpc.pb.h"
+#include "qst.pb.h"
 #include "trie.hpp"
 
 namespace qst {
@@ -45,7 +47,7 @@ namespace qst {
           QFile f(info.absoluteFilePath());
           if(f.open(QIODevice::ReadOnly)) {
             QTextStream in(&f);
-            qst::AppInfo app;
+            qst::Display app;
             while(!in.atEnd() && !in.readLine().startsWith("[Desktop Entry]"))
               ;
             while(!in.atEnd()) {
@@ -110,11 +112,7 @@ namespace qst {
       , addr()
       , searcher() {
       if(argc < 2) {
-        std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
-        std::cout << "Options:" << std::endl;
-        std::cout << "  --addr <addr>  Set the address to listen on" << std::endl;
-        std::cout << "  --help         Show this help message" << std::endl;
-        std::exit(0);
+        showHelp();
       }
       for(int i = 1; i < argc; ++i) {
         if(std::strcmp(argv[i], "--addr") == 0) {
@@ -122,11 +120,7 @@ namespace qst {
         } else if(std::strcmp(argv[i], "--front-end") == 0) {
           frontEnd = argv[++i];
         } else if(std::strcmp(argv[i], "--help") == 0) {
-          std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
-          std::cout << "Options:" << std::endl;
-          std::cout << "  --addr <addr>  Set the address to listen on" << std::endl;
-          std::cout << "  --help         Show this help message" << std::endl;
-          std::exit(0);
+          showHelp();
         }
       }
     }
@@ -140,21 +134,27 @@ namespace qst {
       server->Wait();
     }
   protected:
-    ::grpc::Status Query(
-      ::grpc::ServerContext *context, const ::qst::Input *request, ::qst::AppInfo *response) override {
-      response->set_name(request->str());
-      response->set_exec("hello world");
-      std::cout << "Query: " << request->str() << std::endl;
+    ::grpc::Status ListApp(::grpc::ServerContext *context, const ::qst::Input *request,
+      ::grpc::ServerWriter<::qst::Display> *writer) override {
+      std::cout << "ListApp: " << request->str() << std::endl;
+      Display display;
+      for(auto& info : searcher.search(request->str())){
+        display.set_name(info->name());
+        display.set_flags(info->flags());
+        writer->Write(display);
+      }
       return ::grpc::Status::OK;
     }
-    ::grpc::Status ListApp(::grpc::ServerContext *context, const ::qst::Input *request,
-      ::grpc::ServerWriter<::qst::AppInfo> *writer) override {
-      std::cout << "ListApp: " << request->str() << std::endl;
-      for(auto& info : searcher.search(request->str()))
-        writer->Write(*info);
+    virtual ::grpc::Status RunApp(
+      ::grpc::ServerContext *context, const ::qst::ExecHint *request, ::qst::Empty *response) override {
+      AppInfo *info = searcher.search(request->name())[0];
+      process(info->exec().substr(0, info->exec().find_first_of(' ')), info->exec());
+      std::cout << "RunApp: " << info->name() << std::endl;
+      std::cout << "Exec: " << info->exec() << std::endl;
       return ::grpc::Status::OK;
     }
     void process(std::string_view path, std::string_view args) {
+      std::cout << "exec: " << path.data() << " " << args.data() << std::endl;
       pid_t pid = fork();
       if(pid == 0) {
         fclose(stdin);
@@ -165,12 +165,13 @@ namespace qst {
         exit(0);
       }
     }
-    ::grpc::Status RunApp(
-      ::grpc::ServerContext *context, const ::qst::AppInfo *request, ::qst::Empty *response) override {
-      process(request->exec().substr(0, request->exec().find_first_of(' ')), request->exec());
-      std::cout << "RunApp: " << request->name() << std::endl;
-      std::cout << "Exec: " << request->exec() << std::endl;
-      return ::grpc::Status::OK;
+    void showHelp() {
+      std::cout << "Usage: qst [options]" << std::endl
+                << "Options:" << std::endl
+                << "  --addr <addr>       Set the address to listen on" << std::endl
+                << "  --front-end <path>  Set the path of front-end" << std::endl
+                << "  --help              Show this help message" << std::endl;
+      std::exit(0);
     }
   };
 }  // namespace qst

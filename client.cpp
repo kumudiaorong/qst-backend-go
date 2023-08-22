@@ -48,10 +48,10 @@ public:
     : stub_(qst::Interact::NewStub(channel)) {
   }
 
-  std::optional<qst::AppInfo> Query(std::string_view input) {
+  std::optional<qst::Display> Query(std::string_view input) {
     ClientContext context;
     qst::Input request{};
-    qst::AppInfo info{};
+    qst::Display info{};
     request.set_str(input);
     Status status = stub_->Query(&context, request, &info);
     if(!status.ok()) {
@@ -60,12 +60,12 @@ public:
     }
     return info;
   }
-  std::vector<qst::AppInfo> ListApp(std::string_view input) {
+  std::vector<qst::Display> ListApp(std::string_view input) {
     ClientContext context;
     qst::Input request{};
-    qst::AppInfo info{};
+    qst::Display info{};
     request.set_str(input);
-    std::vector<qst::AppInfo> infos{};
+    std::vector<qst::Display> infos{};
     auto reader(stub_->ListApp(&context, request));
     while(reader->Read(&info)) {
       infos.push_back(info);
