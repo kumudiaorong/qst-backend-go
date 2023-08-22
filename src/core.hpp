@@ -109,6 +109,13 @@ namespace qst {
       : server()
       , addr()
       , searcher() {
+      if(argc < 2) {
+        std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
+        std::cout << "Options:" << std::endl;
+        std::cout << "  --addr <addr>  Set the address to listen on" << std::endl;
+        std::cout << "  --help         Show this help message" << std::endl;
+        std::exit(0);
+      }
       for(int i = 1; i < argc; ++i) {
         if(std::strcmp(argv[i], "--addr") == 0) {
           addr = argv[++i];
@@ -129,6 +136,7 @@ namespace qst {
       builder.RegisterService(this);
       server = builder.BuildAndStart();
       std::cout << "Server listening on " << addr.data() << std::endl;
+      process(frontEnd, frontEnd + " --addr " + addr);
       server->Wait();
     }
   protected:
@@ -146,26 +154,20 @@ namespace qst {
         writer->Write(*info);
       return ::grpc::Status::OK;
     }
-    ::grpc::Status RunApp(
-      ::grpc::ServerContext *context, const ::qst::AppInfo *request, ::qst::Empty *response) override {
+    void process(std::string_view path, std::string_view args) {
       pid_t pid = fork();
       if(pid == 0) {
         fclose(stdin);
         fclose(stdout);
         fclose(stderr);
-        auto p = request->exec().find_first_of(' ');
-        std::string path = request->exec().substr(0, p);
-        std::cout << "RunApp: " << path << std::endl;
-        std::cout << "Exec: " << request->exec() << std::endl;
         setpgid(0, 0);
-        int err = execlp(path.data(), request->exec().data(), nullptr);
-        // execl("/usr/share/code/code", "code", "--unity-launch", "filename", NULL);
-        // int err = execlp("totem", "totem", "%U", NULL);
-        // if(err == -1) {
-        //   std::cout << "Error: " << strerror(errno) << std::endl;
-        // }
+        int err = execlp(path.data(), args.data(), nullptr);
         exit(0);
       }
+    }
+    ::grpc::Status RunApp(
+      ::grpc::ServerContext *context, const ::qst::AppInfo *request, ::qst::Empty *response) override {
+      process(request->exec().substr(0, request->exec().find_first_of(' ')), request->exec());
       std::cout << "RunApp: " << request->name() << std::endl;
       std::cout << "Exec: " << request->exec() << std::endl;
       return ::grpc::Status::OK;
