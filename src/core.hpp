@@ -138,7 +138,7 @@ namespace qst {
       ::grpc::ServerWriter<::qst::Display> *writer) override {
       std::cout << "ListApp: " << request->str() << std::endl;
       Display display;
-      for(auto& info : searcher.search(request->str())){
+      for(auto& info : searcher.search(request->str())) {
         display.set_name(info->name());
         display.set_flags(info->flags());
         writer->Write(display);
@@ -148,9 +148,10 @@ namespace qst {
     virtual ::grpc::Status RunApp(
       ::grpc::ServerContext *context, const ::qst::ExecHint *request, ::qst::Empty *response) override {
       AppInfo *info = searcher.search(request->name())[0];
-      process(info->exec().substr(0, info->exec().find_first_of(' ')), info->exec());
       std::cout << "RunApp: " << info->name() << std::endl;
-      std::cout << "Exec: " << info->exec() << std::endl;
+      std::cout << "Path: " << info->exec().find_first_of(' ')
+                << info->exec().substr(0, info->exec().find_first_of(' ')) << std::endl;
+      process(info->exec().substr(0, info->exec().find_first_of(' ')), info->exec());
       return ::grpc::Status::OK;
     }
     void process(std::string_view path, std::string_view args) {
