@@ -4,6 +4,12 @@
 #include <string>
 #include <string_view>
 namespace qst {
+  enum class AppInfoFlags : uint32_t {
+    HasArgFile = 1 << 0,
+    HasArgFiles = 1 << 1,
+    HasArgUrl = 1 << 2,
+    HasArgUrls = 1 << 3,
+  };
   class AppInfo {
   public:
     std::string _name;
@@ -39,6 +45,12 @@ namespace qst {
     }
     void set_exec(std::string&& exec) {
       this->_exec = exec;
+    }
+    void set_flags(uint32_t flags) {
+      this->_flags = flags;
+    }
+    void add_flag(AppInfoFlags flag) {
+      this->_flags |= static_cast<uint32_t>(flag);
     }
     uint32_t flags() const {
       return _flags;
