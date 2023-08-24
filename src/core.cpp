@@ -117,6 +117,7 @@ namespace qst {
     , searcher()
     , logger(spdlog::create_async<spdlog::sinks::stdout_color_sink_mt>("backend")) {
     spdlog::set_default_logger(logger);
+    spdlog::set_level(spdlog::level::debug);
     if(argc < 2) {
       showHelp();
     }
