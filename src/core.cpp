@@ -4,8 +4,10 @@
 #include <string>
 
 #include "core.h"
-#include "spdlog/async.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
+// #include <wayland-client.h>
+// #include "spdlog/async.h"
+// #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/common.h"
 #include "spdlog/spdlog.h"
 namespace qst {
   AppSearcher::AppSearcher() {
@@ -101,7 +103,7 @@ namespace qst {
             break;
           }
         }
-        spdlog::trace("Add app: name={} exec={} flags={}", app.name(), app.exec(), app.flags());
+        // spdlog::trace("Add app: name={} exec={} flags={}", app.name(), app.exec(), app.flags());
         apps.insert(app.name(), std::move(app));
         app.set_flags(0);
       }
@@ -115,19 +117,19 @@ namespace qst {
     : server()
     , addr()
     , searcher()
-    , logger(spdlog::create_async<spdlog::sinks::stdout_color_sink_mt>("backend")) {
-    spdlog::set_default_logger(logger);
-    spdlog::set_level(spdlog::level::debug);
+  // , logger(
+  // spdlog::create_async<spdlog::sinks::stdout_color_sink_mt>("backend")
+  // )
+  {
+    // spdlog::set_default_logger(logger);
+    spdlog::set_level(spdlog::level::trace);
     if(argc < 2) {
       showHelp();
     }
     for(int i = 1; i < argc; ++i) {
       if(std::strcmp(argv[i], "--addr") == 0) {
         addr = argv[++i];
-        spdlog::debug("Set address to listen on: {}", addr);
-      } else if(std::strcmp(argv[i], "--front-end") == 0) {
-        frontEnd = argv[++i];
-        spdlog::debug("Set front-end path: {}", frontEnd);
+        spdlog::trace("Set address to listen on: {}", addr);
       } else if(std::strcmp(argv[i], "--help") == 0) {
         showHelp();
       }
@@ -138,13 +140,12 @@ namespace qst {
     builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
     builder.RegisterService(this);
     server = builder.BuildAndStart();
-    spdlog::trace("Server started");
-    process(frontEnd + " --addr " + addr);
+    spdlog::trace("Start server");
     server->Wait();
   }
   ::grpc::Status QstBackendCore::ListApp(
     ::grpc::ServerContext *context, const ::qst::Input *request, ::grpc::ServerWriter<::qst::Display> *writer) {
-    spdlog::debug("ListApp: input={}", request->str());
+    spdlog::trace("ListApp\t: input\t= {}", request->str());
     Display display;
     for(auto& info : searcher.search(request->str())) {
       display.set_name(info->name());
@@ -156,7 +157,7 @@ namespace qst {
   ::grpc::Status QstBackendCore::RunApp(
     ::grpc::ServerContext *context, const ::qst::ExecHint *request, ::qst::Empty *response) {
     AppInfo *info = searcher.search(request->name())[0];
-    spdlog::debug("RunApp: name={} exec={} flags={}", info->name(), info->exec(), info->flags());
+    spdlog::trace("RunApp\t: name\t= {}", info->name());
     std::string args(info->exec());
     if(info->flags() & static_cast<uint32_t>(AppInfoFlags::HasArgFile)) {
       args.replace(args.find("%f"), 2, request->has_file() ? request->file() : "");
@@ -173,13 +174,15 @@ namespace qst {
     process(std::move(args));
     return ::grpc::Status::OK;
   }
-  void QstBackendCore::process(std::string args) {
-    spdlog::debug("Process: args={}", args);
+  void QstBackendCore::process(std::string args, bool stdio) {
+    // spdlog::debug("Process: args={}", args);
     pid_t pid = fork();
     if(pid == 0) {
-      // fclose(stdin);
-      // fclose(stdout);
-      // fclose(stderr);
+      if(!stdio) {
+        fclose(stdin);
+        fclose(stdout);
+        fclose(stderr);
+      }
       setpgid(0, 0);
       std::system(args.data());
       exit(0);
