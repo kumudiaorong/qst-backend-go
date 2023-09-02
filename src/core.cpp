@@ -7,6 +7,7 @@
 // #include <wayland-client.h>
 // #include "spdlog/async.h"
 // #include "spdlog/sinks/stdout_color_sinks.h"
+#include "qst.pb.h"
 #include "spdlog/common.h"
 #include "spdlog/spdlog.h"
 namespace qst {
@@ -144,18 +145,20 @@ namespace qst {
     server->Wait();
   }
   ::grpc::Status QstBackendCore::ListApp(
-    ::grpc::ServerContext *context, const ::qst::Input *request, ::grpc::ServerWriter<::qst::Display> *writer) {
+    ::grpc::ServerContext *context, const ::qst_comm::Input *request, ::qst_comm::DisplayList *response) {
     spdlog::trace("ListApp\t: input\t= {}", request->str());
-    Display display;
+    ::qst_comm::Display display;
+    // Display display;
     for(auto& info : searcher.search(request->str())) {
+      spdlog::trace("ListApp\t: name\t= {}", info->name());
       display.set_name(info->name());
       display.set_flags(info->flags());
-      writer->Write(display);
+      response->add_list()->CopyFrom(display);
     }
     return ::grpc::Status::OK;
   }
   ::grpc::Status QstBackendCore::RunApp(
-    ::grpc::ServerContext *context, const ::qst::ExecHint *request, ::qst::Empty *response) {
+    ::grpc::ServerContext *context, const ::qst_comm::ExecHint *request, ::qst_comm::Empty *response) {
     AppInfo *info = searcher.search(request->name())[0];
     spdlog::trace("RunApp\t: name\t= {}", info->name());
     std::string args(info->exec());

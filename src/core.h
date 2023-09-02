@@ -17,7 +17,7 @@ namespace qst {
     AppSearcher();
     std::vector<AppInfo *> search(std::string_view word);
   };
-  class QstBackendCore : public Interact::Service {
+  class QstBackendCore : public qst_comm::Interact::Service {
   public:
     std::string addr;
     std::unique_ptr<grpc::Server> server;
@@ -27,11 +27,11 @@ namespace qst {
     QstBackendCore(int argc, char *argv[]);
     void exec();
   protected:
-    ::grpc::Status ListApp(::grpc::ServerContext *context, const ::qst::Input *request,
-      ::grpc::ServerWriter<::qst::Display> *writer) override;
+    ::grpc::Status ListApp(
+      ::grpc::ServerContext *context, const ::qst_comm::Input *request, ::qst_comm::DisplayList *response) override;
     ::grpc::Status RunApp(
-      ::grpc::ServerContext *context, const ::qst::ExecHint *request, ::qst::Empty *response) override;
-    void process(std::string args,bool stdio = false);
+      ::grpc::ServerContext *context, const ::qst_comm::ExecHint *request, ::qst_comm::Empty *response) override;
+    void process(std::string args, bool stdio = false);
     void showHelp();
   };
 }  // namespace qst
