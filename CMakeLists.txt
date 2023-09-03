@@ -24,9 +24,10 @@ target_sources(qst-b
   PRIVATE
   src/main.cpp
   src/core.cpp
+  src/appinfo.cpp
+  src/process.cpp
   PUBLIC
   src/trie.hpp
-  src/appinfo.hpp
 )
 
 target_link_libraries(qst-b
@@ -37,7 +38,7 @@ target_link_libraries(qst-b
   # ICU::i18n
 )
 target_include_directories(qst-b PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}/qst-proto/cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/spdlog/include
 )

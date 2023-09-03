@@ -2,21 +2,14 @@
 #define QST_BACKEND_CORE_H
 #include <grpcpp/server_builder.h>
 #include <grpcpp/support/status.h>
-#include <unistd.h>
 
-#include "appinfo.hpp"
+#include "appinfo.h"
 #include "qst.grpc.pb.h"
 // #include "spdlog/logger.h"
 #include "trie.hpp"
 
 namespace qst {
-  class AppSearcher {
-  public:
-    Trie<AppInfo> apps;
-  public:
-    AppSearcher();
-    std::vector<AppInfo *> search(std::string_view word);
-  };
+ 
   class QstBackendCore : public qst_comm::Interact::Service {
   public:
     std::string addr;
