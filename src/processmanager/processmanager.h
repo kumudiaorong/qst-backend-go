@@ -1,5 +1,6 @@
 #ifndef QST_BACKEND_PROCESS_H
 #define QST_BACKEND_PROCESS_H
+#include <sys/types.h>
 #include <atomic>
 #include <memory>
 #include <string>
@@ -14,23 +15,26 @@
 #include <unistd.h>
 #endif
 namespace qst {
-#if defined(_WIN32) || defined(_WIN64)
   class ChildProcess {
   public:
+#if defined(_WIN32) || defined(_WIN64)
     typedef HANDLE key_type;
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
+#elif defined (__linux)
+    typedef pid_t key_type;
+    key_type pid;
+#endif
     std::atomic_flag flag;
     std::jthread thr;
     ChildProcess(std::string args);
-    ChildProcess(ChildProcess&& ano) = default;
     bool is_running() const;
     void wait();
     key_type key() const;
   private:
     void _wait(void);
   };
-#endif
+
   class ProcessManager {
     std::unordered_map<ChildProcess::key_type,std::unique_ptr<ChildProcess>> children;
   public:

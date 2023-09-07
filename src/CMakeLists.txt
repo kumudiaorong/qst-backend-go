@@ -1,5 +1,5 @@
 add_subdirectory(appinfo)
-add_subdirectory(process)
+add_subdirectory(processmanager)
 
 add_executable(qst-b)
 

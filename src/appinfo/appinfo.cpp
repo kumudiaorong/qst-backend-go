@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -156,7 +157,7 @@ namespace qst {
     std::filesystem::path p("/usr/share/applications");
     for(auto& e : std::filesystem::directory_iterator(p)) {
       if(e.path().extension() == ".desktop") {
-        std::ifstream f(e.path());
+        std::ifstream f{e.path()};
         std::string line;
         qst::AppInfo app;
         do
