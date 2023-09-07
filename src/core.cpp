@@ -16,8 +16,8 @@
 namespace qst {
 
   QstBackendCore::QstBackendCore(int argc, char *argv[])
-    : server()
-    , addr()
+    : addr()
+    , server()
     , searcher()
   // , logger(
   // spdlog::create_async<spdlog::sinks::stdout_color_sink_mt>("backend")
@@ -75,36 +75,36 @@ namespace qst {
     if(info->flags() & static_cast<uint32_t>(AppInfoFlags::HasArgUrls)) {
       args.replace(args.find("%U"), 2, "");
     }
-    process(std::move(args));
+    pm.new_process(std::move(args));
     return ::grpc::Status::OK;
   }
-  void QstBackendCore::process(std::string args, bool stdio) {
-    spdlog::trace("Process start: args={}", args);
-#if defined(_WIN32) || defined(_WIN64)
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
-    ZeroMemory(&pi, sizeof(pi));
-    auto err = CreateProcess(nullptr, args.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, nullptr, nullptr);
-    if(err == 0) {
-      spdlog::error("CreateProcess failed: {}", GetLastError());
-    }
-    spdlog::trace("Process end");
-#elif defined(__linux__)
-    pid_t pid = fork();
-    if(pid == 0) {
-      if(!stdio) {
-        fclose(stdin);
-        fclose(stdout);
-        fclose(stderr);
-      }
-      setpgid(0, 0);
-      std::system(args.data());
-      exit(0);
-    }
-#endif
-  }
+//   void QstBackendCore::process(std::string args, bool stdio) {
+//     spdlog::trace("Process start: args={}", args);
+// #if defined(_WIN32) || defined(_WIN64)
+//     STARTUPINFO si;
+//     PROCESS_INFORMATION pi;
+//     ZeroMemory(&si, sizeof(si));
+//     si.cb = sizeof(si);
+//     ZeroMemory(&pi, sizeof(pi));
+//     auto err = CreateProcess(nullptr, args.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, nullptr, nullptr);
+//     if(err == 0) {
+//       spdlog::error("CreateProcess failed: {}", GetLastError());
+//     }
+//     spdlog::trace("Process end");
+// #elif defined(__linux__)
+//     pid_t pid = fork();
+//     if(pid == 0) {
+//       if(!stdio) {
+//         fclose(stdin);
+//         fclose(stdout);
+//         fclose(stderr);
+//       }
+//       setpgid(0, 0);
+//       std::system(args.data());
+//       exit(0);
+//     }
+// #endif
+//   }
   void QstBackendCore::showHelp() {
     std::cout << "Usage: qst [options]" << std::endl
               << "Options:" << std::endl

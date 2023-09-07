@@ -16,32 +16,10 @@ execute_process(
 
 
 add_subdirectory(qst-proto)
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/spdlog)
 
-add_executable(qst-b)
-
-target_sources(qst-b
-  PRIVATE
-  src/main.cpp
-  src/core.cpp
-  src/appinfo.cpp
-  src/process.cpp
-  PUBLIC
-  src/trie.hpp
-)
-
-target_link_libraries(qst-b
-  PRIVATE
-  spdlog::spdlog
-  qst-grpc-cpp
-  # ICU::uc
-  # ICU::i18n
-)
-target_include_directories(qst-b PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/src
-  ${CMAKE_CURRENT_SOURCE_DIR}/qst-proto/cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/spdlog/include
-)
+add_subdirectory(src)
 
 install(TARGETS qst-b
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
