@@ -13,12 +13,16 @@ target_sources(qst-b
 
 target_link_libraries(qst-b
   PRIVATE
-  spdlog::spdlog
-  qst-grpc-cpp
   qst-back-end-appinfo
   qst-back-end-pm
+  qst-grpc-cpp
+  spdlog::spdlog
+  xcl-lib
   # ICU::uc
   # ICU::i18n
+)
+target_link_directories(qst-b PRIVATE
+  ${PROJECT_SOURCE_DIR}/qst-proto/cpp
 )
 target_include_directories(qst-b PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}

@@ -1,7 +1,10 @@
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
+
+#include "xcl/xcl.h"
 
 #ifdef __linux__
 #include <unistd.h>
@@ -19,6 +22,7 @@ namespace qst {
     : addr()
     , server()
     , searcher()
+    , xcl(std::string(std::getenv("HOME")) + "/.config/qst/config.xcl")
   // , logger(
   // spdlog::create_async<spdlog::sinks::stdout_color_sink_mt>("backend")
   // )
@@ -30,28 +34,41 @@ namespace qst {
     }
     for(int i = 1; i < argc; ++i) {
       if(std::strcmp(argv[i], "--addr") == 0) {
-        addr = argv[++i];
-        spdlog::trace("Set address to listen on: {}", addr);
+        this->addr = argv[++i];
+        spdlog::debug("Set address to listen on: {}", addr);
       } else if(std::strcmp(argv[i], "--help") == 0) {
         showHelp();
       }
     }
+    if(this->addr.empty()) {
+      spdlog::error("QstBackendCore\t: no addr");
+      std::exit(1);
+    }
   }
+  QstBackendCore::~QstBackendCore() {
+    server->Shutdown();
+    xcl.save();
+  }
+
   void QstBackendCore::exec() {
     ::grpc::ServerBuilder builder;
     builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
     builder.RegisterService(this);
     server = builder.BuildAndStart();
-    spdlog::trace("Start server");
+    spdlog::debug("Start server");
     server->Wait();
   }
   ::grpc::Status QstBackendCore::ListApp(
     ::grpc::ServerContext *context, const ::qst_comm::Input *request, ::qst_comm::DisplayList *response) {
-    spdlog::trace("ListApp\t: input\t= {}", request->str());
+    spdlog::debug("ListApp\t: input\t= {}", request->str());
     ::qst_comm::Display display;
     // Display display;
-    for(auto& info : searcher.search(request->str())) {
-      spdlog::trace("ListApp\t: name\t= {}", info->name());
+    auto infos = searcher.search(request->str());
+    std::sort(infos.begin(), infos.end(), [](AppInfo *a, AppInfo *b) { return a->_run_count > b->_run_count; });
+    for(auto info : infos) {
+      spdlog::debug("ListApp\t: name\t= {}", info->name(), info->_run_count);
+      spdlog::debug("ListApp\t: exec\t= {}", info->exec());
+      spdlog::debug("ListApp\t: run_count\t= {}", info->_run_count);
       display.set_name(std::string(info->name()));
       display.set_flags(info->flags());
       response->add_list()->CopyFrom(display);
@@ -61,7 +78,7 @@ namespace qst {
   ::grpc::Status QstBackendCore::RunApp(
     ::grpc::ServerContext *context, const ::qst_comm::ExecHint *request, ::qst_comm::Empty *response) {
     AppInfo *info = searcher.search(request->name())[0];
-    spdlog::trace("RunApp\t: name\t= {}", info->name());
+    spdlog::debug("RunApp\t: name\t= {}", info->name());
     std::string args(info->exec());
     if(info->flags() & static_cast<uint32_t>(AppInfoFlags::HasArgFile)) {
       args.replace(args.find("%f"), 2, request->has_file() ? request->file() : "");
@@ -76,35 +93,10 @@ namespace qst {
       args.replace(args.find("%U"), 2, "");
     }
     pm.new_process(std::move(args));
+    info->_run_count++;
+    xcl.try_insert("run_count").first.get().try_insert<long>(info->name()).first.get().emplace<2>(info->_run_count);
     return ::grpc::Status::OK;
   }
-//   void QstBackendCore::process(std::string args, bool stdio) {
-//     spdlog::trace("Process start: args={}", args);
-// #if defined(_WIN32) || defined(_WIN64)
-//     STARTUPINFO si;
-//     PROCESS_INFORMATION pi;
-//     ZeroMemory(&si, sizeof(si));
-//     si.cb = sizeof(si);
-//     ZeroMemory(&pi, sizeof(pi));
-//     auto err = CreateProcess(nullptr, args.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, nullptr, nullptr);
-//     if(err == 0) {
-//       spdlog::error("CreateProcess failed: {}", GetLastError());
-//     }
-//     spdlog::trace("Process end");
-// #elif defined(__linux__)
-//     pid_t pid = fork();
-//     if(pid == 0) {
-//       if(!stdio) {
-//         fclose(stdin);
-//         fclose(stdout);
-//         fclose(stderr);
-//       }
-//       setpgid(0, 0);
-//       std::system(args.data());
-//       exit(0);
-//     }
-// #endif
-//   }
   void QstBackendCore::showHelp() {
     std::cout << "Usage: qst [options]" << std::endl
               << "Options:" << std::endl

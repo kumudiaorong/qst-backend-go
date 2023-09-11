@@ -8,9 +8,10 @@
 #include "qst.grpc.pb.h"
 // #include "spdlog/logger.h"
 #include "trie.hpp"
+#include "xcl/xcl.h"
 
 namespace qst {
- 
+
   class QstBackendCore : public qst_comm::Interact::Service {
   public:
     std::string addr;
@@ -18,8 +19,10 @@ namespace qst {
     AppSearcher searcher;
     ProcessManager pm;
     // std::shared_ptr<spdlog::logger> logger;
+    xcl::Xcl xcl;
 
     QstBackendCore(int argc, char *argv[]);
+    ~QstBackendCore();
     void exec();
   protected:
     ::grpc::Status ListApp(

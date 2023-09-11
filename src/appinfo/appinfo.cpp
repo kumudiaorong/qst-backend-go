@@ -20,7 +20,10 @@ namespace qst {
     : _name(name)
     , _exec(exec)
     , _icon()
-    , _flags(0) {
+    , _flags(0)
+    , _working_dir()
+    , _description()
+    , _run_count(0) {
   }
   std::string_view AppInfo::name() const {
     return _name;
@@ -40,15 +43,6 @@ namespace qst {
   void AppInfo::set_exec(std::string&& exec) {
     this->_exec = exec;
   }
-  void AppInfo::set_flags(uint32_t flags) {
-    this->_flags = flags;
-  }
-  void AppInfo::add_flag(AppInfoFlags flag) {
-    this->_flags |= static_cast<uint32_t>(flag);
-  }
-  uint32_t AppInfo::flags() const {
-    return _flags;
-  }
   std::string_view AppInfo::icon() const {
     return _icon;
   }
@@ -57,6 +51,15 @@ namespace qst {
   }
   void AppInfo::set_icon(std::string&& icon) {
     this->_icon = icon;
+  }
+  void AppInfo::set_flags(uint32_t flags) {
+    this->_flags = flags;
+  }
+  void AppInfo::add_flag(AppInfoFlags flag) {
+    this->_flags |= static_cast<uint32_t>(flag);
+  }
+  uint32_t AppInfo::flags() const {
+    return _flags;
   }
   std::string_view AppInfo::working_dir() const {
     return _working_dir;
@@ -75,6 +78,15 @@ namespace qst {
   }
   void AppInfo::set_description(std::string&& description) {
     this->_description = description;
+  }
+  uint32_t AppInfo::run_count() const {
+    return _run_count;
+  }
+  void AppInfo::set_run_count(uint32_t run_count) {
+    this->_run_count = run_count;
+  }
+  void AppInfo::add_run_count() {
+    this->_run_count++;
   }
   AppSearcher::AppSearcher() {
 #if defined(_WIN32) || defined(_WIN64)
@@ -155,11 +167,19 @@ namespace qst {
 #elif defined(__linux__)
     // addr = "unix:/tmp/qst.sock";
     std::filesystem::path p("/usr/share/applications");
+    if(!std::filesystem::exists(p)) {
+      spdlog::warn("AppSearcher\t: cannot open /usr/share/applications");
+      return;
+    }
     for(auto& e : std::filesystem::directory_iterator(p)) {
       if(e.path().extension() == ".desktop") {
         std::ifstream f{e.path()};
+        if(!f.is_open()){
+          spdlog::warn("AppSearcher\t: cannot open {}", e.path().string());
+          continue;
+        }
         std::string line;
-        qst::AppInfo app;
+        qst::AppInfo app{};
         do
           std::getline(f, line);
         while(!f.eof() && line != "[Desktop Entry]");
@@ -194,13 +214,12 @@ namespace qst {
             } while(pos != std::string::npos);
             app.set_exec(std::move(line.substr(5)));
             // app.set_exec(std::move(line.substr(5)));
-          } else if(line.starts_with("[")) {
+          } else if(line[0] == '[') {
             break;
           }
         }
         // spdlog::trace("Add app: name={} exec={} flags={}", app.name(), app.exec(), app.flags());
         apps.insert(app.name(), std::move(app));
-        app.set_flags(0);
       }
     }
 #endif

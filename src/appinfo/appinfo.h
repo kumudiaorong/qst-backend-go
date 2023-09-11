@@ -1,5 +1,5 @@
-#ifndef QST_APPINFO_HPP
-#define QST_APPINFO_HPP
+#ifndef QST_APPINFO_H
+#define QST_APPINFO_H
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -20,6 +20,7 @@ namespace qst {
     uint32_t _flags;
     std::string _working_dir;
     std::string _description;
+    uint32_t _run_count;
     AppInfo() = default;
     AppInfo(const AppInfo&) = default;
     AppInfo(AppInfo&&) = default;
@@ -33,18 +34,21 @@ namespace qst {
     std::string_view exec() const;
     void set_exec(std::string_view exec);
     void set_exec(std::string&& exec);
-    uint32_t flags() const;
-    void set_flags(uint32_t flags);
-    void add_flag(AppInfoFlags flag);
     std::string_view icon() const;
     void set_icon(std::string_view icon);
     void set_icon(std::string&& icon);
+    uint32_t flags() const;
+    void set_flags(uint32_t flags);
+    void add_flag(AppInfoFlags flag);
     std::string_view working_dir() const;
     void set_working_dir(std::string_view working_dir);
     void set_working_dir(std::string&& working_dir);
     std::string_view description() const;
     void set_description(std::string_view description);
     void set_description(std::string&& description);
+    uint32_t run_count() const;
+    void set_run_count(uint32_t run_count);
+    void add_run_count();
   };
   class AppSearcher {
   public:

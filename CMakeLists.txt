@@ -18,6 +18,7 @@ execute_process(
 add_subdirectory(qst-proto)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/spdlog)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/xcl-cpp)
 
 add_subdirectory(src)
 
