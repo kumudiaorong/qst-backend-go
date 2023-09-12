@@ -9,9 +9,9 @@
 namespace qst {
   template <typename Info>
   class TrieNode {
-  public:
     std::unordered_map<char, TrieNode> children;
     std::vector<Info> infos;
+  public:
     TrieNode()
       : TrieNode(nullptr) {
     }

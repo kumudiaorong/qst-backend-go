@@ -4,18 +4,16 @@
 #include <iostream>
 #include <string>
 
-#include "xcl/xcl.h"
-
-#ifdef __linux__
-#include <unistd.h>
-#endif
 #include "core.h"
+#include "xcl/xcl.h"
 // #include <wayland-client.h>
 // #include "spdlog/async.h"
 // #include "spdlog/sinks/stdout_color_sinks.h"
 #include "qst.pb.h"
 #include "spdlog/common.h"
 #include "spdlog/spdlog.h"
+#ifdef __linux__
+#endif
 namespace qst {
 
   QstBackendCore::QstBackendCore(int argc, char *argv[])
@@ -64,13 +62,13 @@ namespace qst {
     ::qst_comm::Display display;
     // Display display;
     auto infos = searcher.search(request->str());
-    std::sort(infos.begin(), infos.end(), [](AppInfo *a, AppInfo *b) { return a->_run_count > b->_run_count; });
+    std::sort(infos.begin(), infos.end(), [](AppInfo *a, AppInfo *b) { return a->run_count > b->run_count; });
     for(auto info : infos) {
-      spdlog::debug("ListApp\t: name\t= {}", info->name(), info->_run_count);
-      spdlog::debug("ListApp\t: exec\t= {}", info->exec());
-      spdlog::debug("ListApp\t: run_count\t= {}", info->_run_count);
-      display.set_name(std::string(info->name()));
-      display.set_flags(info->flags());
+      spdlog::debug("ListApp\t: name\t= {}", info->name, info->run_count);
+      spdlog::debug("ListApp\t: exec\t= {}", info->exec);
+      spdlog::debug("ListApp\t: run_count\t= {}", info->run_count);
+      display.set_name(std::string(info->name));
+      display.set_flags(static_cast<uint32_t>(info->flags));
       response->add_list()->CopyFrom(display);
     }
     return ::grpc::Status::OK;
@@ -78,23 +76,24 @@ namespace qst {
   ::grpc::Status QstBackendCore::RunApp(
     ::grpc::ServerContext *context, const ::qst_comm::ExecHint *request, ::qst_comm::Empty *response) {
     AppInfo *info = searcher.search(request->name())[0];
-    spdlog::debug("RunApp\t: name\t= {}", info->name());
-    std::string args(info->exec());
-    if(info->flags() & static_cast<uint32_t>(AppInfoFlags::HasArgFile)) {
+    spdlog::debug("RunApp\t: name\t= {}", info->name);
+    std::string args(info->exec);
+    if(info->flags & AppInfoFlags::HasArgFile) {
       args.replace(args.find("%f"), 2, request->has_file() ? request->file() : "");
     }
-    if(info->flags() & static_cast<uint32_t>(AppInfoFlags::HasArgFiles)) {
+    if(info->flags & AppInfoFlags::HasArgFiles) {
       args.replace(args.find("%F"), 2, "");
     }
-    if(info->flags() & static_cast<uint32_t>(AppInfoFlags::HasArgUrl)) {
+    if(info->flags & AppInfoFlags::HasArgUrl) {
       args.replace(args.find("%u"), 2, request->has_url() ? request->url() : "");
     }
-    if(info->flags() & static_cast<uint32_t>(AppInfoFlags::HasArgUrls)) {
+    if(info->flags & AppInfoFlags::HasArgUrls) {
       args.replace(args.find("%U"), 2, "");
     }
     pm.new_process(std::move(args));
-    info->_run_count++;
-    xcl.try_insert("run_count").first.get().try_insert<long>(info->name()).first.get().emplace<2>(info->_run_count);
+    info->run_count++;
+    xcl.insert_or_assign<long>(std::string("run_count'") + info->name, info->run_count);
+    xcl.save(true);
     return ::grpc::Status::OK;
   }
   void QstBackendCore::showHelp() {

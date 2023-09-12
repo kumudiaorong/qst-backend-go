@@ -16,77 +16,25 @@
 #endif
 #include "appinfo.h"
 namespace qst {
+
+  AppInfoFlags operator|(AppInfoFlags a, AppInfoFlags b) {
+    return static_cast<AppInfoFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+  }
+  bool operator&(AppInfoFlags a, AppInfoFlags b) {
+    return static_cast<uint32_t>(a) & static_cast<uint32_t>(b);
+  }
+  AppInfoFlags& operator|=(AppInfoFlags& a, AppInfoFlags b) {
+    a = a | b;
+    return a;
+  }
   AppInfo::AppInfo(std::string_view name, std::string_view exec)
-    : _name(name)
-    , _exec(exec)
-    , _icon()
-    , _flags(0)
-    , _working_dir()
-    , _description()
-    , _run_count(0) {
-  }
-  std::string_view AppInfo::name() const {
-    return _name;
-  }
-  void AppInfo::set_name(std::string_view name) {
-    this->_name = name;
-  }
-  void AppInfo::set_name(std::string&& name) {
-    this->_name = name;
-  }
-  std::string_view AppInfo::exec() const {
-    return _exec;
-  }
-  void AppInfo::set_exec(std::string_view exec) {
-    this->_exec = exec;
-  }
-  void AppInfo::set_exec(std::string&& exec) {
-    this->_exec = exec;
-  }
-  std::string_view AppInfo::icon() const {
-    return _icon;
-  }
-  void AppInfo::set_icon(std::string_view icon) {
-    this->_icon = icon;
-  }
-  void AppInfo::set_icon(std::string&& icon) {
-    this->_icon = icon;
-  }
-  void AppInfo::set_flags(uint32_t flags) {
-    this->_flags = flags;
-  }
-  void AppInfo::add_flag(AppInfoFlags flag) {
-    this->_flags |= static_cast<uint32_t>(flag);
-  }
-  uint32_t AppInfo::flags() const {
-    return _flags;
-  }
-  std::string_view AppInfo::working_dir() const {
-    return _working_dir;
-  }
-  void AppInfo::set_working_dir(std::string_view working_dir) {
-    this->_working_dir = working_dir;
-  }
-  void AppInfo::set_working_dir(std::string&& working_dir) {
-    this->_working_dir = working_dir;
-  }
-  std::string_view AppInfo::description() const {
-    return _description;
-  }
-  void AppInfo::set_description(std::string_view description) {
-    this->_description = description;
-  }
-  void AppInfo::set_description(std::string&& description) {
-    this->_description = description;
-  }
-  uint32_t AppInfo::run_count() const {
-    return _run_count;
-  }
-  void AppInfo::set_run_count(uint32_t run_count) {
-    this->_run_count = run_count;
-  }
-  void AppInfo::add_run_count() {
-    this->_run_count++;
+    : name(name)
+    , exec(exec)
+    , icon()
+    , flags(AppInfoFlags::None)
+    , working_dir()
+    , description()
+    , run_count(0) {
   }
   AppSearcher::AppSearcher() {
 #if defined(_WIN32) || defined(_WIN64)
@@ -174,7 +122,7 @@ namespace qst {
     for(auto& e : std::filesystem::directory_iterator(p)) {
       if(e.path().extension() == ".desktop") {
         std::ifstream f{e.path()};
-        if(!f.is_open()){
+        if(!f.is_open()) {
           spdlog::warn("AppSearcher\t: cannot open {}", e.path().string());
           continue;
         }
@@ -186,7 +134,7 @@ namespace qst {
         while(!f.eof()) {
           std::getline(f, line);
           if(line.starts_with("Name=")) {
-            app.set_name(std::move(line.substr(5)));
+            app.name = std::move(line.substr(5));
           } else if(line.starts_with("Exec=")) {
             std::string::size_type pos = 5;
             do {
@@ -197,13 +145,13 @@ namespace qst {
               if(line[++pos] == '%') {
                 continue;
               } else if(line[pos] == 'f') {
-                app.add_flag(qst::AppInfoFlags::HasArgFile);
+                app.flags |= qst::AppInfoFlags::HasArgFile;
               } else if(line[pos] == 'F') {
-                app.add_flag(qst::AppInfoFlags::HasArgFiles);
+                app.flags |= qst::AppInfoFlags::HasArgFiles;
               } else if(line[pos] == 'u') {
-                app.add_flag(qst::AppInfoFlags::HasArgUrl);
+                app.flags |= qst::AppInfoFlags::HasArgUrl;
               } else if(line[pos] == 'U') {
-                app.add_flag(qst::AppInfoFlags::HasArgUrls);
+                app.flags |= qst::AppInfoFlags::HasArgUrls;
               } else if(line[pos] == 'd' || line[pos] == 'D' || line[pos] == 'n' || line[pos] == 'N' || line[pos] == 'v'
                         || line[pos] == 'm') {
                 line.erase(pos, 2);
@@ -212,14 +160,14 @@ namespace qst {
               } else if(line[pos] == 'k') {
               }
             } while(pos != std::string::npos);
-            app.set_exec(std::move(line.substr(5)));
+            app.exec = std::move(line.substr(5));
             // app.set_exec(std::move(line.substr(5)));
           } else if(line[0] == '[') {
             break;
           }
         }
         // spdlog::trace("Add app: name={} exec={} flags={}", app.name(), app.exec(), app.flags());
-        apps.insert(app.name(), std::move(app));
+        apps.insert(app.name, std::move(app));
       }
     }
 #endif
