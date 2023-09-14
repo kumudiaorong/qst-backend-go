@@ -27,6 +27,10 @@ namespace qst {
     a = a | b;
     return a;
   }
+  AppInfoFlags& operator^=(AppInfoFlags& a, AppInfoFlags b) {
+    a = static_cast<AppInfoFlags>(static_cast<uint32_t>(a) ^ static_cast<uint32_t>(b));
+    return a;
+  }
   AppInfo::AppInfo(std::string_view name, std::string_view exec)
     : name(name)
     , exec(exec)
@@ -173,6 +177,6 @@ namespace qst {
 #endif
   }
   std::vector<AppInfo *> AppSearcher::search(std::string_view word) {
-    return apps.find_prefix(word);
+    return apps.find_prefix(word, MatchFlags::CaseInsensitive | MatchFlags::Fuzzy);
   }
 }  // namespace qst

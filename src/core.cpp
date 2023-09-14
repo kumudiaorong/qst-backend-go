@@ -42,6 +42,7 @@ namespace qst {
       spdlog::error("QstBackendCore\t: no addr");
       std::exit(1);
     }
+    xcl.try_insert("run_count");
   }
   QstBackendCore::~QstBackendCore() {
     server->Shutdown();
@@ -62,10 +63,21 @@ namespace qst {
     ::qst_comm::Display display;
     // Display display;
     auto infos = searcher.search(request->str());
+    for(auto info : infos) {
+      if(!(info->flags & AppInfoFlags::HasConfig)) {
+        auto run_count = xcl.find<long>(std::string("run_count'") + info->name);
+        if(run_count) {
+          info->run_count = *run_count;
+        }
+        spdlog::debug("ListApp\t: load run_count\t= {}", info->run_count);
+        info->flags ^= AppInfoFlags::HasConfig;
+      }
+    }
     std::sort(infos.begin(), infos.end(), [](AppInfo *a, AppInfo *b) { return a->run_count > b->run_count; });
     for(auto info : infos) {
       spdlog::debug("ListApp\t: name\t= {}", info->name, info->run_count);
       spdlog::debug("ListApp\t: exec\t= {}", info->exec);
+      spdlog::debug("ListApp\t: flags\t= {}", static_cast<uint32_t>(info->flags));
       spdlog::debug("ListApp\t: run_count\t= {}", info->run_count);
       display.set_name(std::string(info->name));
       display.set_flags(static_cast<uint32_t>(info->flags));

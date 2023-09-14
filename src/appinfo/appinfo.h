@@ -8,14 +8,16 @@
 namespace qst {
   enum class AppInfoFlags : uint32_t {
     None = 0,
-    HasArgFile = 1 << 0,
-    HasArgFiles = 1 << 1,
-    HasArgUrl = 1 << 2,
-    HasArgUrls = 1 << 3,
+    HasConfig = 1 << 0,
+    HasArgFile = 1 << 1,
+    HasArgFiles = 1 << 2,
+    HasArgUrl = 1 << 3,
+    HasArgUrls = 1 << 4,
   };
   AppInfoFlags operator|(AppInfoFlags a, AppInfoFlags b);
   bool operator&(AppInfoFlags a, AppInfoFlags b);
   AppInfoFlags&operator|=(AppInfoFlags& a, AppInfoFlags b);
+  AppInfoFlags& operator^=(AppInfoFlags& a, AppInfoFlags b);
   class AppInfo {
   public:
     std::string name;

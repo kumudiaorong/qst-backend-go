@@ -1,15 +1,129 @@
 #ifndef QST_TRIE_HPP
 #define QST_TRIE_HPP
+#include <cstddef>
+#include <cstdlib>
 #include <functional>
 #include <memory>
 #include <ranges>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 namespace qst {
+  enum class MatchFlags {
+    None = 0,
+    CaseInsensitive = 1 << 0,
+    Fuzzy = 1 << 1,
+  };
+  constexpr MatchFlags operator|(MatchFlags a, MatchFlags b) {
+    return static_cast<MatchFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+  }
+  constexpr bool operator&(MatchFlags a, MatchFlags b) {
+    return static_cast<uint32_t>(a) & static_cast<uint32_t>(b);
+  }
+  constexpr MatchFlags& operator|=(MatchFlags& a, MatchFlags b) {
+    a = a | b;
+    return a;
+  }
+  constexpr MatchFlags& operator^=(MatchFlags& a, MatchFlags b) {
+    a = static_cast<MatchFlags>(static_cast<uint32_t>(a) ^ static_cast<uint32_t>(b));
+    return a;
+  }
+
+  // class U8Char {
+  //   char32_t codepoint;
+  // public:
+  //   U8Char(std::string_view str)
+  //     : codepoint(0) {
+  //     if(str.empty()) {
+  //       return;
+  //     }
+  //     if(str[0] & 0x80) {
+  //       if(str[0] & 0x40) {
+  //         if(str[0] & 0x20) {
+  //           if(str[0] & 0x10) {
+  //             codepoint = (str[0] & 0x07) << 18;
+  //             codepoint |= (str[1] & 0x3F) << 12;
+  //             codepoint |= (str[2] & 0x3F) << 6;
+  //             codepoint |= (str[3] & 0x3F);
+  //           } else {
+  //             codepoint = (str[0] & 0x0F) << 12;
+  //             codepoint |= (str[1] & 0x3F) << 6;
+  //             codepoint |= (str[2] & 0x3F);
+  //           }
+  //         } else {
+  //           codepoint = (str[0] & 0x1F) << 6;
+  //           codepoint |= (str[1] & 0x3F);
+  //         }
+  //       } else {
+  //         codepoint = (str[0] & 0x3F);
+  //       }
+  //     } else {
+  //       codepoint = (str[0] & 0x7F);
+  //     }
+  //   }
+  //   U8Char(char32_t codepoint)
+  //     : codepoint(codepoint) {
+  //   }
+  //   ~U8Char() {
+  //   }
+  //   bool operator==(const U8Char& other) const {
+  //     return this->codepoint == other.codepoint;
+  //   }
+  //   bool operator!=(const U8Char& other) const {
+  //     return this->codepoint != other.codepoint;
+  //   }
+  //   bool operator<(const U8Char& other) const {
+  //     return this->codepoint < other.codepoint;
+  //   }
+  //   bool operator>(const U8Char& other) const {
+  //     return this->codepoint > other.codepoint;
+  //   }
+  //   bool operator<=(const U8Char& other) const {
+  //     return this->codepoint <= other.codepoint;
+  //   }
+  //   bool operator>=(const U8Char& other) const {
+  //     return this->codepoint >= other.codepoint;
+  //   }
+  //   char32_t get_codepoint() const {
+  //     return this->codepoint;
+  //   }
+  //   std::size_t size() const {
+  //     if(this->codepoint == 0) {
+  //       return 0;
+  //     } else if(this->codepoint < 0x80) {
+  //       return 1;
+  //     } else if(this->codepoint < 0x800) {
+  //       return 2;
+  //     } else if(this->codepoint < 0x10000) {
+  //       return 3;
+  //     } else {
+  //       return 4;
+  //     }
+  //   }
+  // };
+  constexpr std::pair<char32_t, std::size_t> u8char(std::string_view str) {
+    if(str.empty()) {
+      return {0, 0};
+    }
+    if(!(str[0] & 0x80)) {
+      return {str[0], 1};
+    }
+    if((str[0] & 0x70) == 0x70) {
+      return {(str[0] & 0x07) << 18 | (str[1] & 0x3F) << 12 | (str[2] & 0x3F) << 6 | (str[3] & 0x3F), 4};
+    }
+    if((str[0] & 0x60) == 0x60) {
+      return {(str[0] & 0x0F) << 12 | (str[1] & 0x3F) << 6 | (str[2] & 0x3F), 3};
+    }
+    if((str[0] & 0x40) == 0x40) {
+      return {(str[0] & 0x1F) << 6 | (str[1] & 0x3F), 2};
+    }
+    return {0, 0};
+  }
+
   template <typename Info>
   class TrieNode {
-    std::unordered_map<char, TrieNode> children;
+    std::unordered_map<char32_t, TrieNode> children;
     std::vector<Info> infos;
   public:
     TrieNode()
@@ -21,17 +135,40 @@ namespace qst {
     }
     ~TrieNode() {
     }
-    TrieNode *find_or_insert(std::string_view word) {
-      return word.empty()
-               ? this
-               : this->children.try_emplace(word[0], TrieNode<Info>(this)).first->second.find_or_insert(word.substr(1));
+    TrieNode *try_insert(std::string_view word) {
+      auto [c, s] = u8char(word);
+      // : this->children.try_emplace(c, this).first->second.try_insert(word.substr(c.size()));
+      return s == 0 ? this : this->children.try_emplace(c, this).first->second.try_insert(word.substr(s));
     }
-    TrieNode *find(std::string_view word) {
-      if(word.empty()) {
-        return this;
+    std::vector<TrieNode *> find(std::string_view word, MatchFlags flags = MatchFlags::None) {
+      std::vector<TrieNode *> nodes{};
+      auto [c, s] = u8char(word);
+      if(s == 0) {
+        nodes.push_back(this);
+        return nodes;
       }
-      auto iter = this->children.find(word[0]);
-      return (iter == this->children.end() ? nullptr : iter->second.find(word.substr(1)));
+      auto citer = this->children.end();
+      if((flags & MatchFlags::CaseInsensitive) && (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z')) {
+        if(citer = this->children.find(c ^ 0x20); citer != this->children.end()) {
+          auto child_nodes = citer->second.find(word.substr(s), flags);
+          nodes.insert(nodes.end(), child_nodes.begin(), child_nodes.end());
+        }
+      }
+      auto niter = this->children.find(c);
+      if(niter != this->children.end()) {
+        auto child_nodes = niter->second.find(word.substr(s),flags);
+        nodes.insert(nodes.end(), child_nodes.begin(), child_nodes.end());
+      }
+      if(flags & MatchFlags::Fuzzy) {
+        for(auto iter = this->children.begin(); iter != this->children.end(); ++iter) {
+          if(iter == citer || iter == niter) {
+            continue;
+          }
+          auto child_nodes = iter->second.find(word,flags);
+          nodes.insert(nodes.end(), child_nodes.begin(), child_nodes.end());
+        }
+      }
+      return nodes;
     }
     std::vector<Info *> all_info() {
       std::vector<Info *> nodes;
@@ -72,7 +209,7 @@ namespace qst {
     }
     template <typename _Info>
     void insert(std::string_view word, _Info&& info) {
-      root->find_or_insert(word)->add_info(std::forward<_Info>(info));
+      root->try_insert(word)->add_info(std::forward<_Info>(info));
     }
     Info *insert(std::string_view word) {
       return root->find_or_insert(word)->get_info();
@@ -80,11 +217,12 @@ namespace qst {
     Info *find(std::string_view word) {
       return root->find(word)->get_info();
     }
-    std::vector<Info *> find_prefix(std::string_view word) {
+    std::vector<Info *> find_prefix(std::string_view word, MatchFlags flags = MatchFlags::None) {
       std::vector<Info *> infos;
-      auto node = root->find(word);
-      if(node != nullptr) {
-        infos = std::move(node->all_info());
+      auto nodes = root->find(word, flags);
+      for(auto node : nodes) {
+        auto sub = node->all_info();
+        infos.insert(infos.end(), sub.begin(), sub.end());
       }
       return infos;
     }
