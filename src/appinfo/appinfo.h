@@ -8,11 +8,10 @@
 namespace qst {
   enum class AppInfoFlags : uint32_t {
     None = 0,
-    HasConfig = 1 << 0,
-    HasArgFile = 1 << 1,
-    HasArgFiles = 1 << 2,
-    HasArgUrl = 1 << 3,
-    HasArgUrls = 1 << 4,
+    HasArgFile = 1 << 0,
+    HasArgFiles = 1 << 1,
+    HasArgUrl = 1 << 2,
+    HasArgUrls = 1 << 3,
   };
   AppInfoFlags operator|(AppInfoFlags a, AppInfoFlags b);
   bool operator&(AppInfoFlags a, AppInfoFlags b);
@@ -24,6 +23,7 @@ namespace qst {
     std::string exec;
     std::string icon;
     AppInfoFlags flags;
+    bool is_config;
     std::string working_dir;
     std::string description;
     uint32_t run_count;

@@ -64,13 +64,13 @@ namespace qst {
     // Display display;
     auto infos = searcher.search(request->str());
     for(auto info : infos) {
-      if(!(info->flags & AppInfoFlags::HasConfig)) {
+      if(!(info->is_config)) {
         auto run_count = xcl.find<long>(std::string("run_count'") + info->name);
         if(run_count) {
           info->run_count = *run_count;
         }
         spdlog::debug("ListApp\t: load run_count\t= {}", info->run_count);
-        info->flags ^= AppInfoFlags::HasConfig;
+        info->is_config = true;
       }
     }
     std::sort(infos.begin(), infos.end(), [](AppInfo *a, AppInfo *b) { return a->run_count > b->run_count; });
@@ -88,7 +88,6 @@ namespace qst {
   ::grpc::Status QstBackendCore::RunApp(
     ::grpc::ServerContext *context, const ::qst_comm::ExecHint *request, ::qst_comm::Empty *response) {
     AppInfo *info = searcher.search(request->name())[0];
-    spdlog::debug("RunApp\t: name\t= {}", info->name);
     std::string args(info->exec);
     if(info->flags & AppInfoFlags::HasArgFile) {
       args.replace(args.find("%f"), 2, request->has_file() ? request->file() : "");
@@ -102,6 +101,7 @@ namespace qst {
     if(info->flags & AppInfoFlags::HasArgUrls) {
       args.replace(args.find("%U"), 2, "");
     }
+    spdlog::debug("RunApp\t: {}",args);
     pm.new_process(std::move(args));
     info->run_count++;
     xcl.insert_or_assign<long>(std::string("run_count'") + info->name, info->run_count);
