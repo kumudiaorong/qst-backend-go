@@ -22,7 +22,7 @@ namespace qst {
     std::string name;
     std::string exec;
     std::string icon;
-    AppInfoFlags flags;
+    std::string args_hint;
     bool is_config;
     std::string working_dir;
     std::string description;

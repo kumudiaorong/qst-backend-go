@@ -79,10 +79,10 @@ namespace qst {
     for(auto info : infos) {
       spdlog::debug("ListApp\t: name\t= {}", info->name, info->run_count);
       spdlog::debug("ListApp\t: exec\t= {}", info->exec);
-      spdlog::debug("ListApp\t: flags\t= {}", static_cast<uint32_t>(info->flags));
+      spdlog::debug("ListApp\t: argHint\t= {}", info->args_hint);
       spdlog::debug("ListApp\t: run_count\t= {}", info->run_count);
       display.set_name(std::string(info->name));
-      display.set_flags(static_cast<uint32_t>(info->flags));
+      display.set_arghint(std::string(info->args_hint));
       response->add_list()->CopyFrom(display);
     }
     return ::grpc::Status::OK;
@@ -91,17 +91,8 @@ namespace qst {
     ::grpc::ServerContext *context, const ::qst_comm::ExecHint *request, ::qst_comm::Empty *response) {
     AppInfo *info = searcher.search(request->name())[0];
     std::string args(info->exec);
-    if(info->flags & AppInfoFlags::HasArgFile) {
-      args.replace(args.find("%f"), 2, request->has_file() ? request->file() : "");
-    }
-    if(info->flags & AppInfoFlags::HasArgFiles) {
-      args.replace(args.find("%F"), 2, "");
-    }
-    if(info->flags & AppInfoFlags::HasArgUrl) {
-      args.replace(args.find("%u"), 2, request->has_url() ? request->url() : "");
-    }
-    if(info->flags & AppInfoFlags::HasArgUrls) {
-      args.replace(args.find("%U"), 2, "");
+    if(auto p= args.find("%"); p != std::string::npos) {
+      args.replace(p,2,request->args());
     }
     spdlog::debug("RunApp\t: {}",args);
     pm.new_process(std::move(args));
