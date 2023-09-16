@@ -82,7 +82,7 @@ namespace qst {
             auto path = std::make_unique<TCHAR[]>(MAX_PATH);
             hr = pShellLink->GetPath(path.get(), MAX_PATH, NULL, SLGP_RAWPATH);
             if(SUCCEEDED(hr)) {
-              app.exec = std::string((char *)path.get());
+              app.exec = path.get();
               std::memset(path.get(), 0, MAX_PATH);
               spdlog::debug("AppSearcher\t: GetPath");
             }

@@ -5,7 +5,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
-
+#include "../def.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -20,12 +20,10 @@ namespace qst {
   class ChildProcess {
   public:
 #if defined(_WIN32) || defined(_WIN64)
-    typedef std::basic_string<TCHAR> cmd_type;
     typedef HANDLE key_type;
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
 #elif defined(__linux)
-    typedef std::string cmd_type;
     typedef pid_t key_type;
   private:
     key_type pid;
@@ -33,7 +31,7 @@ namespace qst {
     std::atomic_flag flag;
     std::jthread thr;
   public:
-    ChildProcess(cmd_type cmd, std::string args);
+    ChildProcess(std::basic_string<env_char> cmd, std::string args);
     bool is_running() const;
     void wait();
     key_type key() const;
@@ -45,7 +43,7 @@ namespace qst {
     std::unordered_map<ChildProcess::key_type, std::unique_ptr<ChildProcess>> children;
   public:
     ProcessManager();
-    bool new_process(ChildProcess::cmd_type cmd,std::string args);
+    bool new_process(std::basic_string<env_char> cmd,std::string args);
   };
 }  // namespace qst
 #endif

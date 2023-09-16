@@ -5,7 +5,7 @@
 #include <string_view>
 
 #include "trie.hpp"
-
+#include "../def.h"
 // name for app header
 namespace qst {
   enum class AppInfoFlags : uint32_t {
@@ -22,7 +22,7 @@ namespace qst {
   class AppInfo {
   public:
     std::string name{};
-    std::string exec{};
+    std::basic_string<env_char> exec{};
     std::string icon{};
     std::string args_hint{};
     bool is_config{false};

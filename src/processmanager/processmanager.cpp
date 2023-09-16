@@ -5,7 +5,7 @@
 #include <thread>
 
 #include "processmanager.h"
-
+#include "../def.h"
 #if defined(_WIN32) || defined(_WIN64)
 #include <processthreadsapi.h>
 #include <Windows.h>
@@ -16,9 +16,9 @@
 #endif
 #include "spdlog/spdlog.h"
 namespace qst {
-  ChildProcess::ChildProcess(cmd_type cmd, std::string args) {
+  ChildProcess::ChildProcess(std::basic_string<env_char> cmd, std::string args) {
 #if defined(_WIN32) || defined(_WIN64)
-    if(auto p = cmd.find(TEXT("%")); p != std::string::npos) {
+    if(auto p = cmd.find(TEXT("%")); p != std::basic_string<env_char>::npos) {
 #ifdef UNICODE
       cmd.replace(p, 2, std::wstring(args.data(), args.size()));
       auto wargs = std::make_unique<wchar_t[]>(args.size() * 2);
@@ -87,7 +87,8 @@ namespace qst {
   ProcessManager::ProcessManager()
     : children() {
   }
-  bool ProcessManager::new_process(ChildProcess::cmd_type cmd, std::string args) {
+  bool ProcessManager::new_process(std::basic_string<env_char>
+   cmd, std::string args) {
     // auto f = std::jthread(&qst::new_process, std::move(args));
     auto cp = std::make_unique<ChildProcess>(cmd, args);
     if(cp->is_running()) {
