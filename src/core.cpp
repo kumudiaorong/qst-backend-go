@@ -62,8 +62,8 @@ namespace qst {
     spdlog::debug("ListApp\t: input\t= {}", request->str());
     ::qst_comm::Display display;
     // Display display;
-    auto infos = searcher.search(request->str());
-    for(auto info : infos) {
+    this->last_result = searcher.search(request->str());
+    for(auto info : this->last_result) {
       if(!(info->is_config)) {
         auto run_count = xcl.find<long>(std::string("run_count'") + info->name);
         if(run_count) {
@@ -73,8 +73,8 @@ namespace qst {
         info->is_config = true;
       }
     }
-    std::sort(infos.begin(), infos.end(), [](AppInfo *a, AppInfo *b) { return a->run_count > b->run_count; });
-    for(auto info : infos) {
+    std::sort(this->last_result.begin(), this->last_result.end(), [](AppInfo *a, AppInfo *b) { return a->run_count > b->run_count; });
+    for(auto info : this->last_result) {
       spdlog::debug("ListApp\t: name\t= {}", info->name, info->run_count);
       spdlog::debug("ListApp\t: exec\t= {}", info->exec);
       spdlog::debug("ListApp\t: argHint\t= {}", info->args_hint);
@@ -87,7 +87,7 @@ namespace qst {
   }
   ::grpc::Status QstBackendCore::RunApp(
     ::grpc::ServerContext *context, const ::qst_comm::ExecHint *request, ::qst_comm::Empty *response) {
-    AppInfo *info = searcher.search(request->name())[0];
+    AppInfo *info =this->last_result[request->idx()];
     std::string args(info->exec);
     if(auto p= args.find("%"); p != std::string::npos) {
       args.replace(p,2,request->args());

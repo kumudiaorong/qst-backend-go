@@ -2,6 +2,7 @@
 #define QST_BACKEND_CORE_H
 #include <grpcpp/server_builder.h>
 #include <grpcpp/support/status.h>
+#include <vector>
 
 #include "appinfo.h"
 #include "processmanager.h"
@@ -17,6 +18,7 @@ namespace qst {
     std::string addr;
     std::unique_ptr<grpc::Server> server;
     AppSearcher searcher;
+    std::vector<AppInfo*> last_result;
     ProcessManager pm;
     // std::shared_ptr<spdlog::logger> logger;
     xcl::Xcl xcl;
