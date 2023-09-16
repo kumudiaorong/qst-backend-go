@@ -3,14 +3,17 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 
 // name for app header
 #if defined(_WIN32) || defined(_WIN64)
 #include <shlobj.h>
 #include <windows.h>
+
 #elif defined(__linux__)
 #include <unistd.h>
 #endif
@@ -41,6 +44,7 @@ namespace qst {
     , run_count(0) {
   }
   AppSearcher::AppSearcher() {
+    std::cout << "AppSearcher\t: start" << std::endl;
 #if defined(_WIN32) || defined(_WIN64)
     CoInitialize(NULL);
     LPWSTR startMenuPath = NULL;
@@ -51,7 +55,7 @@ namespace qst {
     }
     std::filesystem::path p(startMenuPath);
     CoTaskMemFree(startMenuPath);
-    IShellLink *pShellLink = NULL;
+    IShellLinkW *pShellLink = NULL;
     hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID *)&pShellLink);
     if(FAILED(hr)) {
       spdlog::error("Failed to create shell link");
@@ -59,26 +63,35 @@ namespace qst {
     }
     auto resolve_link = [this, pShellLink](const std::filesystem::directory_entry& de) {
       if(de.path().extension() == ".lnk") {
+        spdlog::debug("AppSearcher\t: resolve {}", de.path().string());
         IPersistFile *pPersistFile = NULL;
         HRESULT hr = pShellLink->QueryInterface(IID_IPersistFile, (LPVOID *)&pPersistFile);
+        spdlog::debug("AppSearcher\t: QueryInterface");
         if(SUCCEEDED(hr)) {
           // 加载快捷方式
           hr = pPersistFile->Load(de.path().c_str(), STGM_READ);
+          spdlog::debug("AppSearcher\t: Load");
           if(SUCCEEDED(hr)) {
             qst::AppInfo app;
-            app.set_name(de.path().stem().string());
+            // transcode to utf8
+            app.name.reserve(MAX_PATH * 2);
+            auto s = de.path().stem().u8string();
+            app.name = {(char*)s.data(), s.size()};
             // 获取快捷方式的目标路径
-            auto path = std::make_unique<CHAR[]>(MAX_PATH);
+            auto path = std::make_unique<WCHAR[]>(MAX_PATH);
             hr = pShellLink->GetPath(path.get(), MAX_PATH, NULL, SLGP_RAWPATH);
             if(SUCCEEDED(hr)) {
-              app.set_exec(std::string_view(path.get()));
+              app.exec.resize(MAX_PATH * 2);
+              app.exec.resize(WideCharToMultiByte(CP_UTF8, 0, path.get(), -1, app.exec.data(), app.exec.capacity(), NULL, NULL));
               std::memset(path.get(), 0, MAX_PATH);
+              spdlog::debug("AppSearcher\t: GetPath");
             }
             // 获取快捷方式的工作目录
             hr = pShellLink->GetWorkingDirectory(path.get(), MAX_PATH);
             if(SUCCEEDED(hr)) {
-              app.set_working_dir(std::string_view(path.get()));
+              app.working_dir = WideCharToMultiByte(CP_UTF8, 0, path.get(), -1, NULL, 0, NULL, NULL);
               std::memset(path.get(), 0, MAX_PATH);
+              spdlog::debug("AppSearcher\t: GetWorkingDirectory");
             }
             // 获取快捷方式的参数
             hr = pShellLink->GetArguments(path.get(), MAX_PATH);
@@ -86,22 +99,29 @@ namespace qst {
               std::memset(path.get(), 0, MAX_PATH);
             }
             // 获取快捷方式的描述
-            CHAR description[MAX_PATH];
+            WCHAR description[MAX_PATH];
             hr = pShellLink->GetDescription(description, MAX_PATH);
             if(SUCCEEDED(hr)) {
-              app.set_description(std::string_view(description));
+              app.description = WideCharToMultiByte(CP_UTF8, 0, description, -1, NULL, 0, NULL, NULL);
               std::memset(description, 0, MAX_PATH);
+              spdlog::debug("AppSearcher\t: GetDescription");
             }
             // 获取快捷方式的图标路径
             int iconIndex;
             hr = pShellLink->GetIconLocation(path.get(), MAX_PATH, &iconIndex);
             if(SUCCEEDED(hr)) {
-              app.set_icon(std::string_view(path.get()));
+              app.icon = WideCharToMultiByte(CP_UTF8, 0, path.get(), -1, NULL, 0, NULL, NULL);
               std::memset(path.get(), 0, MAX_PATH);
+              spdlog::debug("AppSearcher\t: GetIconLocation");
             }
-            this->apps.insert(app.name(), std::move(app));
+            std::string name = app.name;
+            this->apps.insert(std::move(name), std::move(app));
+            spdlog::debug("AppSearcher\t: insert");
           }
           pPersistFile->Release();
+          spdlog::debug("AppSearcher\t: Release");
+        } else {
+          spdlog::debug("AppSearcher\t: {}not a link", de.path().string());
         }
       }
     };
@@ -114,6 +134,7 @@ namespace qst {
         resolve_link(i);
       }
     }
+    std::cout << "AppSearcher\t: end" << std::endl;
     pShellLink->Release();
     CoUninitialize();
 #elif defined(__linux__)
@@ -175,6 +196,7 @@ namespace qst {
       }
     }
 #endif
+    std::cout << "AppSearcher\t: end" << std::endl;
   }
   std::vector<AppInfo *> AppSearcher::search(std::string_view word) {
     return apps.find_prefix(word, MatchFlags::CaseInsensitive | MatchFlags::Fuzzy);

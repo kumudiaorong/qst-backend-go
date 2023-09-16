@@ -19,7 +19,7 @@ namespace qst {
     AppSearcher searcher;
     ProcessManager pm;
     // std::shared_ptr<spdlog::logger> logger;
-    xcl::Xcl xcl;
+    // xcl::Xcl xcl;
 
     QstBackendCore(int argc, char *argv[]);
     ~QstBackendCore();

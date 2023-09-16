@@ -3,7 +3,6 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-
 #include "core.h"
 #include "xcl/xcl.h"
 // #include <wayland-client.h>
@@ -20,13 +19,16 @@ namespace qst {
     : addr()
     , server()
     , searcher()
-    , xcl(std::string(std::getenv("HOME")) + "/.config/qst/config.xcl")
+    // , xcl(std::string(_dupenv_s("HOME")) + "/.config/qst/config.xcl")
+    // , xcl(std::string(std::getenv("HOME")) + "/.config/qst/config.xcl")
+    // , xcl("")
   // , logger(
   // spdlog::create_async<spdlog::sinks::stdout_color_sink_mt>("backend")
   // )
   {
     // spdlog::set_default_logger(logger);
-    spdlog::set_level(spdlog::level::trace);
+    std::cout<<"QstBackendCore\t: start"<<std::endl;
+    spdlog::debug("QstBackendCore\t: start");
     if(argc < 2) {
       showHelp();
     }
@@ -42,11 +44,11 @@ namespace qst {
       spdlog::error("QstBackendCore\t: no addr");
       std::exit(1);
     }
-    xcl.try_insert("run_count");
+    // xcl.try_insert("run_count");
   }
   QstBackendCore::~QstBackendCore() {
     server->Shutdown();
-    xcl.save();
+    // xcl.save();
   }
 
   void QstBackendCore::exec() {
@@ -63,16 +65,16 @@ namespace qst {
     ::qst_comm::Display display;
     // Display display;
     auto infos = searcher.search(request->str());
-    for(auto info : infos) {
-      if(!(info->is_config)) {
-        auto run_count = xcl.find<long>(std::string("run_count'") + info->name);
-        if(run_count) {
-          info->run_count = *run_count;
-        }
-        spdlog::debug("ListApp\t: load run_count\t= {}", info->run_count);
-        info->is_config = true;
-      }
-    }
+    // for(auto info : infos) {
+    //   if(!(info->is_config)) {
+    //     auto run_count = xcl.find<long>(std::string("run_count'") + info->name);
+    //     if(run_count) {
+    //       info->run_count = *run_count;
+    //     }
+    //     spdlog::debug("ListApp\t: load run_count\t= {}", info->run_count);
+    //     info->is_config = true;
+    //   }
+    // }
     std::sort(infos.begin(), infos.end(), [](AppInfo *a, AppInfo *b) { return a->run_count > b->run_count; });
     for(auto info : infos) {
       spdlog::debug("ListApp\t: name\t= {}", info->name, info->run_count);
@@ -104,8 +106,8 @@ namespace qst {
     spdlog::debug("RunApp\t: {}",args);
     pm.new_process(std::move(args));
     info->run_count++;
-    xcl.insert_or_assign<long>(std::string("run_count'") + info->name, info->run_count);
-    xcl.save(true);
+    // xcl.insert_or_assign<long>(std::string("run_count'") + info->name, info->run_count);
+    // xcl.save(true);
     return ::grpc::Status::OK;
   }
   void QstBackendCore::showHelp() {
