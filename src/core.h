@@ -21,7 +21,7 @@ namespace qst {
     std::vector<AppInfo*> last_result;
     ProcessManager pm;
     // std::shared_ptr<spdlog::logger> logger;
-    xcl::Xcl xcl;
+    // xcl::Xcl xcl;
 
     QstBackendCore(int argc, char *argv[]);
     ~QstBackendCore();

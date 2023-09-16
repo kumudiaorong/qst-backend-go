@@ -1,5 +1,6 @@
 #ifndef QST_TRIE_HPP
 #define QST_TRIE_HPP
+#include <stdint.h>
 #include <cstddef>
 #include <cstdlib>
 #include <functional>
@@ -9,6 +10,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "spdlog/spdlog.h"
 namespace qst {
   enum class MatchFlags {
     None = 0,
@@ -65,6 +67,7 @@ namespace qst {
     }
     TrieNode *try_insert(std::string_view word) {
       auto [c, s] = u8char(word);
+      spdlog::debug("TrieNode\t: try_insert\t= {}\tlen = {}", (uint8_t)word[0], s);
       // : this->children.try_emplace(c, this).first->second.try_insert(word.substr(c.size()));
       return s == 0 ? this : this->children.try_emplace(c, this).first->second.try_insert(word.substr(s));
     }
@@ -76,7 +79,7 @@ namespace qst {
         return nodes;
       }
       auto citer = this->children.end();
-      if((flags & MatchFlags::CaseInsensitive) && (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z')) {
+      if((flags & MatchFlags::CaseInsensitive) && ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))) {
         if(citer = this->children.find(c ^ 0x20); citer != this->children.end()) {
           auto child_nodes = citer->second.find(word.substr(s), flags);
           nodes.insert(nodes.end(), child_nodes.begin(), child_nodes.end());
@@ -137,6 +140,7 @@ namespace qst {
     }
     template <typename _Info>
     void insert(std::string_view word, _Info&& info) {
+      spdlog::debug("Trie\t: insert\t= {}", word);
       root->try_insert(word)->add_info(std::forward<_Info>(info));
     }
     Info *insert(std::string_view word) {
