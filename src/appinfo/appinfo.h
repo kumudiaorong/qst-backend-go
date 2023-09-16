@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+
 #include "trie.hpp"
+
 // name for app header
 namespace qst {
   enum class AppInfoFlags : uint32_t {
@@ -15,18 +17,18 @@ namespace qst {
   };
   AppInfoFlags operator|(AppInfoFlags a, AppInfoFlags b);
   bool operator&(AppInfoFlags a, AppInfoFlags b);
-  AppInfoFlags&operator|=(AppInfoFlags& a, AppInfoFlags b);
+  AppInfoFlags& operator|=(AppInfoFlags& a, AppInfoFlags b);
   AppInfoFlags& operator^=(AppInfoFlags& a, AppInfoFlags b);
   class AppInfo {
   public:
-    std::string name;
-    std::string exec;
-    std::string icon;
-    std::string args_hint;
-    bool is_config;
-    std::string working_dir;
-    std::string description;
-    uint32_t run_count;
+    std::string name{};
+    std::string exec{};
+    std::string icon{};
+    std::string args_hint{};
+    bool is_config{false};
+    std::string working_dir{};
+    std::string description{};
+    uint32_t run_count = 0;
     AppInfo() = default;
     AppInfo(const AppInfo&) = default;
     AppInfo(AppInfo&&) = default;
@@ -39,6 +41,7 @@ namespace qst {
     Trie<AppInfo> apps;
   public:
     AppSearcher();
+    void init();
     std::vector<AppInfo *> search(std::string_view word);
   };
 }  // namespace qst

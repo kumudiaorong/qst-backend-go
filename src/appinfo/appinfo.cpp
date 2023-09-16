@@ -43,8 +43,9 @@ namespace qst {
     , description()
     , run_count(0) {
   }
-  AppSearcher::AppSearcher() {
-    std::cout << "AppSearcher\t: start" << std::endl;
+  AppSearcher::AppSearcher() {}
+  void AppSearcher::init() {
+    std::cout << "AppSearcher\t: init start" << std::endl;
 #if defined(_WIN32) || defined(_WIN64)
     CoInitialize(NULL);
     LPWSTR startMenuPath = NULL;
@@ -55,7 +56,7 @@ namespace qst {
     }
     std::filesystem::path p(startMenuPath);
     CoTaskMemFree(startMenuPath);
-    IShellLinkW *pShellLink = NULL;
+    IShellLink *pShellLink = NULL;
     hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID *)&pShellLink);
     if(FAILED(hr)) {
       spdlog::error("Failed to create shell link");
@@ -74,23 +75,21 @@ namespace qst {
           if(SUCCEEDED(hr)) {
             qst::AppInfo app;
             // transcode to utf8
-            app.name.reserve(MAX_PATH * 2);
-            auto s = de.path().stem().u8string();
-            app.name = {(char *)s.data(), s.size()};
+            app.name= de.path().stem().string();
+            // auto s = de.path().stem().u16string();
+            // app.name = {(char *)s.data(), s.size()*2};
             // 获取快捷方式的目标路径
-            auto path = std::make_unique<WCHAR[]>(MAX_PATH);
+            auto path = std::make_unique<TCHAR[]>(MAX_PATH);
             hr = pShellLink->GetPath(path.get(), MAX_PATH, NULL, SLGP_RAWPATH);
             if(SUCCEEDED(hr)) {
-              app.exec.resize(MAX_PATH * 2);
-              app.exec.resize(
-                WideCharToMultiByte(CP_UTF8, 0, path.get(), -1, app.exec.data(), app.exec.capacity(), NULL, NULL));
+              app.exec = std::string((char *)path.get());
               std::memset(path.get(), 0, MAX_PATH);
               spdlog::debug("AppSearcher\t: GetPath");
             }
             // 获取快捷方式的工作目录
             hr = pShellLink->GetWorkingDirectory(path.get(), MAX_PATH);
             if(SUCCEEDED(hr)) {
-              app.working_dir = WideCharToMultiByte(CP_UTF8, 0, path.get(), -1, NULL, 0, NULL, NULL);
+              // app.working_dir = WideCharToMultiByte(CP_UTF8, 0, path.get(), -1, NULL, 0, NULL, NULL);
               std::memset(path.get(), 0, MAX_PATH);
               spdlog::debug("AppSearcher\t: GetWorkingDirectory");
             }
@@ -100,18 +99,17 @@ namespace qst {
               std::memset(path.get(), 0, MAX_PATH);
             }
             // 获取快捷方式的描述
-            WCHAR description[MAX_PATH];
-            hr = pShellLink->GetDescription(description, MAX_PATH);
+            hr = pShellLink->GetDescription(path.get(), MAX_PATH);
             if(SUCCEEDED(hr)) {
-              app.description = WideCharToMultiByte(CP_UTF8, 0, description, -1, NULL, 0, NULL, NULL);
-              std::memset(description, 0, MAX_PATH);
+              // app.description = WideCharToMultiByte(CP_UTF8, 0, description, -1, NULL, 0, NULL, NULL);
+              std::memset(path.get(), 0, MAX_PATH);
               spdlog::debug("AppSearcher\t: GetDescription");
             }
             // 获取快捷方式的图标路径
             int iconIndex;
             hr = pShellLink->GetIconLocation(path.get(), MAX_PATH, &iconIndex);
             if(SUCCEEDED(hr)) {
-              app.icon = WideCharToMultiByte(CP_UTF8, 0, path.get(), -1, NULL, 0, NULL, NULL);
+              // app.icon = WideCharToMultiByte(CP_UTF8, 0, path.get(), -1, NULL, 0, NULL, NULL);
               std::memset(path.get(), 0, MAX_PATH);
               spdlog::debug("AppSearcher\t: GetIconLocation");
             }
@@ -135,7 +133,6 @@ namespace qst {
         resolve_link(i);
       }
     }
-    std::cout << "AppSearcher\t: end" << std::endl;
     pShellLink->Release();
     CoUninitialize();
 #elif defined(__linux__)
@@ -197,7 +194,7 @@ namespace qst {
       }
     }
 #endif
-    std::cout << "AppSearcher\t: end" << std::endl;
+    std::cout << "AppSearcher\t: init end" << std::endl;
   }
   std::vector<AppInfo *> AppSearcher::search(std::string_view word) {
     return apps.find_prefix(word, MatchFlags::CaseInsensitive | MatchFlags::Fuzzy);
