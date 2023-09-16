@@ -35,7 +35,7 @@ namespace qst {
     : name(name)
     , exec(exec)
     , icon()
-    , flags(AppInfoFlags::None)
+    , args_hint()
     , working_dir()
     , description()
     , run_count(0) {
@@ -75,7 +75,7 @@ namespace qst {
               std::memset(path.get(), 0, MAX_PATH);
             }
             // 获取快捷方式的工作目录
-            hr = pShellLink->GetWorkingDirectory(path.get(), MAX_PATH);
+            hr = pShellLink->Getworking_directory(path.get(), MAX_PATH);
             if(SUCCEEDED(hr)) {
               app.set_working_dir(std::string_view(path.get()));
               std::memset(path.get(), 0, MAX_PATH);
@@ -149,13 +149,13 @@ namespace qst {
               if(line[++pos] == '%') {
                 continue;
               } else if(line[pos] == 'f') {
-                app.flags |= qst::AppInfoFlags::HasArgFile;
+                app.args_hint += "file";
               } else if(line[pos] == 'F') {
-                app.flags |= qst::AppInfoFlags::HasArgFiles;
+                app.args_hint += "files";
               } else if(line[pos] == 'u') {
-                app.flags |= qst::AppInfoFlags::HasArgUrl;
+                app.args_hint += "url";
               } else if(line[pos] == 'U') {
-                app.flags |= qst::AppInfoFlags::HasArgUrls;
+                app.args_hint += "urls";
               } else if(line[pos] == 'd' || line[pos] == 'D' || line[pos] == 'n' || line[pos] == 'N' || line[pos] == 'v'
                         || line[pos] == 'm') {
                 line.erase(pos, 2);
