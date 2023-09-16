@@ -76,13 +76,14 @@ namespace qst {
             // transcode to utf8
             app.name.reserve(MAX_PATH * 2);
             auto s = de.path().stem().u8string();
-            app.name = {(char*)s.data(), s.size()};
+            app.name = {(char *)s.data(), s.size()};
             // 获取快捷方式的目标路径
             auto path = std::make_unique<WCHAR[]>(MAX_PATH);
             hr = pShellLink->GetPath(path.get(), MAX_PATH, NULL, SLGP_RAWPATH);
             if(SUCCEEDED(hr)) {
               app.exec.resize(MAX_PATH * 2);
-              app.exec.resize(WideCharToMultiByte(CP_UTF8, 0, path.get(), -1, app.exec.data(), app.exec.capacity(), NULL, NULL));
+              app.exec.resize(
+                WideCharToMultiByte(CP_UTF8, 0, path.get(), -1, app.exec.data(), app.exec.capacity(), NULL, NULL));
               std::memset(path.get(), 0, MAX_PATH);
               spdlog::debug("AppSearcher\t: GetPath");
             }
@@ -170,13 +171,13 @@ namespace qst {
               if(line[++pos] == '%') {
                 continue;
               } else if(line[pos] == 'f') {
-                app.flags |= qst::AppInfoFlags::HasArgFile;
+                app.args_hint += "file";
               } else if(line[pos] == 'F') {
-                app.flags |= qst::AppInfoFlags::HasArgFiles;
+                app.args_hint += "files";
               } else if(line[pos] == 'u') {
-                app.flags |= qst::AppInfoFlags::HasArgUrl;
+                app.args_hint += "url";
               } else if(line[pos] == 'U') {
-                app.flags |= qst::AppInfoFlags::HasArgUrls;
+                app.args_hint += "urls";
               } else if(line[pos] == 'd' || line[pos] == 'D' || line[pos] == 'n' || line[pos] == 'N' || line[pos] == 'v'
                         || line[pos] == 'm') {
                 line.erase(pos, 2);
