@@ -127,12 +127,8 @@ namespace qst {
   ::grpc::Status QstBackendCore::RunApp(
     ::grpc::ServerContext *context, const ::qst_comm::ExecHint *request, ::qst_comm::Empty *response) {
     AppInfo *info = this->last_result[request->idx()];
-    std::string args(info->exec);
-    spdlog::debug("RunApp\t: {}", args);
-    if(auto p = args.find(TEXT("%")); p != std::string::npos) {
-      args.replace(p, 2, request->args());
-    }
-    pm.new_process(std::move(args));
+    spdlog::debug("RunApp\t: {}", info->exec);
+    pm.new_process(info->exec,request->args());
     info->run_count++;
     xcl.insert_or_assign<long>(std::string("run_count'") + info->name, info->run_count);
     xcl.save(true);
