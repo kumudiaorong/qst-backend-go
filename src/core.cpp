@@ -54,7 +54,7 @@ namespace qst {
     LPWSTR homePath = NULL;
     HRESULT hr = SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &homePath);
     if(SUCCEEDED(hr)) {
-      xcl.load(std::filesystem::path(homePath) / ".config/qst/config.xcl");
+      xcl.load(std::wstring(homePath)+L"\\.config\\qst\\config.xcl");
       CoTaskMemFree(homePath);
     }
 #elif defined(__linux__)
