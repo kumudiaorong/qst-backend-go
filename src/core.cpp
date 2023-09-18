@@ -34,6 +34,8 @@ namespace qst {
     // )
     , xcl() {
     // spdlog::set_default_logger(logger);
+    std::setlocale(LC_ALL, "en_US.UTF-8");
+    spdlog::set_level(spdlog::level::trace);
     spdlog::debug("QstBackendCore\t: start");
     if(argc < 2) {
       showHelp();
@@ -80,18 +82,6 @@ namespace qst {
     ::grpc::ServerContext *context, const ::qst_comm::Input *request, ::qst_comm::DisplayList *response) {
     spdlog::debug("ListApp\t: input\t= {}", request->str());
     ::qst_comm::Display display;
-    // Display display;
-    // std::string tmp{};
-    // tmp.reserve(request->str().size() * 2);
-    // size_t size = 0;
-    // char buf[MB_CUR_MAX];
-    // for(auto c : request->str()) {
-    // }
-    // std::c16rtomb(tmp.data(), request->str().data(), tmp.capacity(), NULL);
-    // // tmp.resize(std::mbstowcs((wchar_t *)tmp.data(), request->str().data(), tmp.capacity()));
-    // std::wcout << (wchar_t *)tmp.data() << std::endl;
-    // this->last_result = searcher.search(tmp);
-
     this->last_result = searcher.search(request->str());
     for(auto info : this->last_result) {
       if(!(info->is_config)) {
@@ -110,14 +100,6 @@ namespace qst {
       spdlog::debug("ListApp\t: exec\t= {}", info->exec);
       spdlog::debug("ListApp\t: argHint\t= {}", info->args_hint);
       spdlog::debug("ListApp\t: run_count\t= {}", info->run_count);
-      // #if defined(_WIN32) || defined(_WIN64)
-      //       std::string tmp{};
-      //       tmp.reserve(info->name.size() * 2);
-      //       tmp.resize(std::wcstombs(tmp.data(), (wchar_t *)info->name.data(), tmp.capacity()));
-      //       display.set_name(tmp);
-      // #elif defined(__linux__)
-      //       display.set_name(std::string(info->name));
-      // #endif
       display.set_name(std::string(info->name));
       display.set_arghint(info->args_hint);
       response->add_list()->CopyFrom(display);
@@ -128,7 +110,7 @@ namespace qst {
     ::grpc::ServerContext *context, const ::qst_comm::ExecHint *request, ::qst_comm::Empty *response) {
     AppInfo *info = this->last_result[request->idx()];
     spdlog::debug("RunApp\t: {}", info->exec);
-    pm.new_process(info->exec,request->args());
+    pm.new_process(info->exec, request->args());
     info->run_count++;
     xcl.insert_or_assign<long>(std::string("run_count'") + info->name, info->run_count);
     xcl.save(true);

@@ -45,6 +45,7 @@ namespace qst {
     if(auto p = cmd.find("%"); p != std::string::npos) {
       cmd.replace(p, 2, args);
     }
+    spdlog::debug("cmd: {}", cmd);
     this->pid = fork();
     if(pid == 0) {
       // if(!stdio) {
@@ -53,7 +54,7 @@ namespace qst {
       //   fclose(stderr);
       // }
       setpgid(0, 0);
-      std::system(args.data());
+      std::system(cmd.data());
       exit(0);
     }
 #endif
