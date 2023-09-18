@@ -8,17 +8,6 @@
 #include "../def.h"
 // name for app header
 namespace qst {
-  enum class AppInfoFlags : uint32_t {
-    None = 0,
-    HasArgFile = 1 << 0,
-    HasArgFiles = 1 << 1,
-    HasArgUrl = 1 << 2,
-    HasArgUrls = 1 << 3,
-  };
-  AppInfoFlags operator|(AppInfoFlags a, AppInfoFlags b);
-  bool operator&(AppInfoFlags a, AppInfoFlags b);
-  AppInfoFlags& operator|=(AppInfoFlags& a, AppInfoFlags b);
-  AppInfoFlags& operator^=(AppInfoFlags& a, AppInfoFlags b);
   class AppInfo {
   public:
     std::string name{};

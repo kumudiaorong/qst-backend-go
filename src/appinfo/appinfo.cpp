@@ -1,6 +1,5 @@
 #include <spdlog/spdlog.h>
 
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -20,20 +19,6 @@
 #include "appinfo.h"
 namespace qst {
 
-  AppInfoFlags operator|(AppInfoFlags a, AppInfoFlags b) {
-    return static_cast<AppInfoFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
-  }
-  bool operator&(AppInfoFlags a, AppInfoFlags b) {
-    return static_cast<uint32_t>(a) & static_cast<uint32_t>(b);
-  }
-  AppInfoFlags& operator|=(AppInfoFlags& a, AppInfoFlags b) {
-    a = a | b;
-    return a;
-  }
-  AppInfoFlags& operator^=(AppInfoFlags& a, AppInfoFlags b) {
-    a = static_cast<AppInfoFlags>(static_cast<uint32_t>(a) ^ static_cast<uint32_t>(b));
-    return a;
-  }
   AppInfo::AppInfo(std::string_view name, std::string_view exec)
     : name(name)
     , exec(exec)
