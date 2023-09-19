@@ -1,8 +1,6 @@
-#include <stdlib.h>
-
 #include <algorithm>
+#include <clocale>
 #include <cstdlib>
-#include <cuchar>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -21,6 +19,8 @@
 #include <shlobj.h>
 #include <windows.h>
 
+#include <cuchar>
+
 #elif defined(__linux__)
 #endif
 namespace qst {
@@ -34,7 +34,10 @@ namespace qst {
     // )
     , xcl() {
     // spdlog::set_default_logger(logger);
-    std::setlocale(LC_ALL, "en_US.UTF-8");
+    if(std::setlocale(LC_ALL, "en_US.UTF-8") == nullptr) {
+      spdlog::error("QstBackendCore\t: setlocale failed");
+      std::exit(1);
+    }
     spdlog::set_level(spdlog::level::trace);
     spdlog::debug("QstBackendCore\t: start");
     if(argc < 2) {
@@ -56,11 +59,16 @@ namespace qst {
     LPWSTR homePath = NULL;
     HRESULT hr = SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &homePath);
     if(SUCCEEDED(hr)) {
-      xcl.load(std::wstring(homePath)+L"\\.config\\qst\\config.xcl");
+      xcl.load(std::wstring(homePath) + L"\\.config\\qst\\config.xcl");
       CoTaskMemFree(homePath);
     }
 #elif defined(__linux__)
-    xcl.load(std::string(std::getenv("HOME")) + "/.config/qst/config.xcl");
+    auto homePath = std::getenv("HOME");
+    if(homePath != nullptr) {
+      spdlog::error("QstBackendCore\t: no HOME");
+      std::exit(1);
+      xcl.load(std::string(homePath) + "/.config/qst/config.xcl");
+    }
 #endif
     xcl.try_insert("run_count");
     searcher.init();
