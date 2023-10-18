@@ -1,4 +1,4 @@
-module qst-back-end
+module qst-backend-go
 
 go 1.21.1
 

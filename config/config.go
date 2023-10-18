@@ -74,7 +74,7 @@ func init() {
 
 	if Status.Attr.Exts == nil {
 		Status.Attr.Exts = make(map[string]*ExtAttr)
-		Status.Attr.Exts[""] = &ExtAttr{Id: 0, Name: "qst-ext-appsearcher", Dir: "/home/kmdr/pro/qst/qst-ext-appsearcher", Exec: "/home/kmdr/pro/qst/qst-ext-appsearcher/qst-ext-appsearcher"}
+		Status.Attr.Exts[""] = &ExtAttr{Id: 0, Name: "qst-ext-appsearcher", Dir: "/home/kmdr/pro/qst/qst-ext-appsearcher", Exec: "/home/kmdr/pro/qst/qst-ext-appsearcher-go/qst-ext-appsearcher-go"}
 	}
 	Status.RunStat = make(map[string]*ExtService)
 }

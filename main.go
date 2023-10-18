@@ -20,9 +20,9 @@ import (
 	"log"
 	"net"
 	"os"
-	"qst-back-end/config"
-	"qst-back-end/pb/daemon"
-	"qst-back-end/pb/defs"
+	"qst-backend-go/config"
+	"qst-backend-go/pb/daemon"
+	"qst-backend-go/pb/defs"
 
 	// "github.com/kumudiaorong/xcl-go/xcl"
 	// "google.golang.org/grpc"
